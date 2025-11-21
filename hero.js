@@ -88,8 +88,8 @@
     }
 
     // Layers of stars
-    const backgroundStars = createStars(5000, 2, 0xffffff); // Distant
-    const brightStars = createStars(1000, 4, 0xffffff); // Closer/Brighter
+    const backgroundStars = createStars(15000, 2, 0xffffff); // Distant
+    const brightStars = createStars(3000, 4, 0xffffff); // Closer/Brighter
 
     scene.add(backgroundStars);
     scene.add(brightStars);
