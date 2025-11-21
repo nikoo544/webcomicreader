@@ -142,18 +142,26 @@
             box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
         }
 
-        /* Custom Art Config Panel (Hidden by default, can be enabled) */
-        #config-panel {
-            display: none;
+        .powerup-indicator {
             position: absolute;
-            right: -320px;
-            top: 0;
-            width: 300px;
-            background: #161b22;
-            padding: 20px;
-            border-left: 2px solid #00f2ff;
-            height: 100%;
-            color: #fff;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .powerup-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #000;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
     </style>
 </head>
@@ -171,6 +179,12 @@
             </div>
         </div>
 
+        <div class="powerup-indicator">
+            <div id="pu-speed" class="powerup-icon" style="background: #ffff00;">⚡</div>
+            <div id="pu-ghost" class="powerup-icon" style="background: #ffffff;">👻</div>
+            <div id="pu-score" class="powerup-icon" style="background: #00ff00;">x2</div>
+        </div>
+
         <canvas id="snakeCanvas" width="600" height="600"></canvas>
         <div id="xp-bar-container">
             <div id="xp-bar-fill"></div>
@@ -178,7 +192,7 @@
 
         <div id="start-screen" class="overlay active">
             <h1>NEON SNAKE RPG</h1>
-            <p>Usa las flechas para moverte<br>Come energía para subir de nivel</p>
+            <p>Usa las flechas para moverte<br>Come energía para subir de nivel<br>Evita al Cazador y usa Portales</p>
             <button onclick="startGame()">Jugar</button>
         </div>
         <div id="game-over-screen" class="overlay">
@@ -190,17 +204,15 @@
 
     <script>
         // --- CONFIGURACIÓN DE ARTE ---
-        // Puedes reemplazar estas URLs con tus propias imágenes
         const GameArt = {
-            head: null, // Ejemplo: 'images/snake-head.png'
-            body: null, // Ejemplo: 'images/snake-body.png'
-            food: null, // Ejemplo: 'images/food.png'
-            background: null, // Ejemplo: 'images/bg.png'
+            head: null,
+            body: null,
+            food: null,
+            background: null,
             hunter: null,
             portal: null
         };
 
-        // Cargar imágenes si existen
         const images = {};
         for (const [key, src] of Object.entries(GameArt)) {
             if (src) {
@@ -234,6 +246,11 @@
         let screenShake = 0;
         let hunter = { x: -1, y: -1, active: false, moveTimer: 0 };
         let portals = [];
+
+        // Powerups
+        let activePowerups = []; // { type: 'speed'|'ghost'|'score', timer: frames }
+        let mapPowerup = null; // { x, y, type }
+        let powerupSpawnTimer = 0;
 
         class Particle {
             constructor(x, y, color) {
@@ -279,6 +296,8 @@
             xpToNextLevel = 100;
             hunter = { x: -1, y: -1, active: false, moveTimer: 0 };
             portals = [];
+            activePowerups = [];
+            mapPowerup = null;
             spawnPortals();
             updateHUD();
             placeFood();
@@ -289,10 +308,8 @@
         }
 
         function spawnPortals() {
-            // Create a pair of portals
             let p1 = { x: Math.floor(Math.random() * (tileCount - 4)) + 2, y: Math.floor(Math.random() * (tileCount - 4)) + 2, color: '#ff9900' };
             let p2 = { x: Math.floor(Math.random() * (tileCount - 4)) + 2, y: Math.floor(Math.random() * (tileCount - 4)) + 2, color: '#0099ff' };
-            // Ensure they don't overlap snake or food (simple check)
             portals = [p1, p2];
         }
 
@@ -304,6 +321,15 @@
 
             const xpPercent = (xp / xpToNextLevel) * 100;
             document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
+
+            // Powerup Indicators
+            document.getElementById('pu-speed').style.opacity = hasPowerup('speed') ? 1 : 0;
+            document.getElementById('pu-ghost').style.opacity = hasPowerup('ghost') ? 1 : 0;
+            document.getElementById('pu-score').style.opacity = hasPowerup('score') ? 1 : 0;
+        }
+
+        function hasPowerup(type) {
+            return activePowerups.some(p => p.type === type);
         }
 
         function main(currentTime) {
@@ -312,17 +338,16 @@
             window.requestAnimationFrame(main);
             const secondsSinceLastRender = (currentTime - lastRenderTime) / 1000;
 
-            // Update particles every frame for smoothness
             updateParticles();
 
-            // Screen shake decay
             if (screenShake > 0) screenShake *= 0.9;
             if (screenShake < 0.5) screenShake = 0;
 
-            // Game logic update (capped at 15 FPS base, increases with level)
+            let baseSpeed = 15;
+            if (hasPowerup('speed')) baseSpeed = 25; // Speed boost
+
             const speedMultiplier = 1 + (level * 0.1);
-            if (secondsSinceLastRender < (1 / (15 * speedMultiplier))) {
-                // Still draw particles/shake even if we don't move snake
+            if (secondsSinceLastRender < (1 / (baseSpeed * speedMultiplier))) {
                 draw();
                 return;
             }
@@ -344,6 +369,28 @@
         function update() {
             if (velocity.x === 0 && velocity.y === 0) return;
 
+            // Powerup Timers
+            for (let i = activePowerups.length - 1; i >= 0; i--) {
+                activePowerups[i].timer--;
+                if (activePowerups[i].timer <= 0) activePowerups.splice(i, 1);
+            }
+            updateHUD(); // Refresh icons
+
+            // Spawn Powerup
+            if (!mapPowerup) {
+                powerupSpawnTimer++;
+                if (powerupSpawnTimer > 200) { // Approx 10-15s
+                    const types = ['speed', 'ghost', 'score'];
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    mapPowerup = {
+                        x: Math.floor(Math.random() * tileCount),
+                        y: Math.floor(Math.random() * tileCount),
+                        type: type
+                    };
+                    powerupSpawnTimer = 0;
+                }
+            }
+
             const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
 
             // Portal Logic
@@ -361,66 +408,81 @@
 
             // Wall collision
             if (!teleported && (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount)) {
-                gameOver();
-                return;
+                if (!hasPowerup('ghost')) {
+                    gameOver();
+                    return;
+                } else {
+                    // Wrap around if ghost
+                    if (head.x < 0) head.x = tileCount - 1;
+                    if (head.x >= tileCount) head.x = 0;
+                    if (head.y < 0) head.y = tileCount - 1;
+                    if (head.y >= tileCount) head.y = 0;
+                }
             }
+
             // Self collision
-            if (checkSelfCollision(head)) {
+            if (checkSelfCollision(head) && !hasPowerup('ghost')) {
                 gameOver();
                 return;
             }
 
             // Hunter Collision
-            if (hunter.active && head.x === hunter.x && head.y === hunter.y) {
+            if (hunter.active && head.x === hunter.x && head.y === hunter.y && !hasPowerup('ghost')) {
                 gameOver();
                 return;
             }
 
             snake.unshift(head);
 
-            // Hunter Logic (Moves every 2 frames approx)
-            if (level >= 3) { // Hunter appears at level 3
+            // Hunter Logic
+            if (level >= 3) {
                 if (!hunter.active) {
                     hunter.active = true;
-                    hunter.x = 0; hunter.y = 0; // Spawn at corner
+                    hunter.x = 0; hunter.y = 0;
                 }
                 hunter.moveTimer++;
                 if (hunter.moveTimer > 2) {
                     hunter.moveTimer = 0;
-                    // Move towards snake head
                     if (hunter.x < snake[0].x) hunter.x++;
                     else if (hunter.x > snake[0].x) hunter.x--;
 
                     if (hunter.y < snake[0].y) hunter.y++;
                     else if (hunter.y > snake[0].y) hunter.y--;
                 }
-                // Check collision again after hunter move
-                if (head.x === hunter.x && head.y === hunter.y) {
+                if (head.x === hunter.x && head.y === hunter.y && !hasPowerup('ghost')) {
                     gameOver();
                     return;
                 }
             }
 
+            // Eat Powerup
+            if (mapPowerup && head.x === mapPowerup.x && head.y === mapPowerup.y) {
+                activePowerups.push({ type: mapPowerup.type, timer: 150 }); // ~10 seconds
+                createExplosion(head.x * gridSize, head.y * gridSize, '#ffffff');
+                mapPowerup = null;
+                powerupSpawnTimer = 0;
+            }
+
             // Eat food
             if (head.x === food.x && head.y === food.y) {
-                // RPG Elements
                 const xpGain = 20;
-                score += 10 * level;
+                let scoreGain = 10 * level;
+                if (hasPowerup('score')) scoreGain *= 2;
+
+                score += scoreGain;
                 xp += xpGain;
 
-                // Level Up Logic
                 if (xp >= xpToNextLevel) {
                     level++;
                     xp = 0;
                     xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
-                    createExplosion(canvas.width / 2, canvas.height / 2, '#ff00aa'); // Level up explosion
+                    createExplosion(canvas.width / 2, canvas.height / 2, '#ff00aa');
                     screenShake = 10;
-                    spawnPortals(); // Move portals on level up
+                    spawnPortals();
                 } else {
                     screenShake = 5;
                 }
 
-                // Effects
                 createExplosion((head.x * gridSize) + gridSize / 2, (head.y * gridSize) + gridSize / 2, '#00f2ff');
 
                 if (score > highScore) {
@@ -437,7 +499,6 @@
         }
 
         function draw() {
-            // Apply screen shake
             ctx.save();
             if (screenShake > 0) {
                 const dx = (Math.random() - 0.5) * screenShake;
@@ -451,7 +512,6 @@
                 ctx.drawImage(images.background, 0, 0, canvas.width, canvas.height);
             } else {
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                // Grid (subtle)
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
                 for (let i = 0; i < tileCount; i++) {
                     ctx.beginPath(); ctx.moveTo(i * gridSize, 0); ctx.lineTo(i * gridSize, canvas.height); ctx.stroke();
@@ -470,7 +530,18 @@
                 ctx.shadowBlur = 0;
             });
 
-            // Draw Particles
+            // Powerup on Map
+            if (mapPowerup) {
+                let color = '#fff';
+                if (mapPowerup.type === 'speed') color = '#ffff00';
+                if (mapPowerup.type === 'score') color = '#00ff00';
+                ctx.fillStyle = color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
+                ctx.fillRect(mapPowerup.x * gridSize + 4, mapPowerup.y * gridSize + 4, gridSize - 8, gridSize - 8);
+                ctx.shadowBlur = 0;
+            }
+
             particles.forEach(p => p.draw(ctx));
 
             // Snake
@@ -483,8 +554,9 @@
                 } else if (index > 0 && images.body) {
                     ctx.drawImage(images.body, x, y, gridSize, gridSize);
                 } else {
-                    // Default drawing
                     ctx.fillStyle = index === 0 ? '#00f2ff' : '#00f2ffaa';
+                    if (hasPowerup('ghost')) ctx.fillStyle = '#ffffffaa'; // Ghost visual
+
                     ctx.shadowBlur = 15;
                     ctx.shadowColor = '#00f2ff';
                     ctx.fillRect(x, y, gridSize - 2, gridSize - 2);

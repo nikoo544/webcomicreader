@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Lander 2077</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #050508;
+            color: #fff;
+            font-family: 'Segoe UI', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.1);
+        }
+
+        canvas {
+            background: #0a0b10;
+            border: 2px solid #333;
+            display: block;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        .stat {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px #000;
+        }
+
+        .good {
+            color: #00ff00;
+        }
+
+        .bad {
+            color: #ff0000;
+        }
+
+        .warn {
+            color: #ffff00;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 20px #000;
+            display: none;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <canvas id="landerCanvas" width="800" height="600"></canvas>
+        <div class="ui-layer">
+            <div class="stat">FUEL: <span id="fuel">1000</span></div>
+            <div class="stat">ALT: <span id="alt">0</span></div>
+            <div class="stat">HSPEED: <span id="hspeed">0</span></div>
+            <div class="stat">VSPEED: <span id="vspeed">0</span></div>
+            <div class="stat">SCORE: <span id="score">0</span></div>
+        </div>
+        <div id="message">LANDED!</div>
+        <div class="controls-hint">ARROWS: Thrust/Rotate | SPACE: Restart</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('landerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game Constants
+        const GRAVITY = 0.05;
+        const THRUST_POWER = 0.15;
+        const ROTATION_SPEED = 0.05;
+        const LANDING_MAX_SPEED = 2.0; // Total speed magnitude
+        const LANDING_MAX_ANGLE = 0.2; // Radians (~11 degrees)
+
+        // Game State
+        let ship = {
+            x: 400, y: 100,
+            vx: 0, vy: 0,
+            angle: -Math.PI / 2, // Pointing up
+            fuel: 1000,
+            dead: false,
+            landed: false
+        };
+
+        let terrain = [];
+        let landingPad = { x: 0, width: 0, y: 0 };
+        let particles = [];
+        let stars = [];
+        let score = 0;
+        let level = 1;
+
+        // Input
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        function init() {
+            generateTerrain();
+            resetShip();
+            generateStars();
+            loop();
+        }
+
+        function resetShip() {
+            ship = {
+                x: 50, y: 50,
+                vx: 1, vy: 0,
+                angle: -Math.PI / 2,
+                fuel: Math.max(500, 1000 - (level * 50)),
+                dead: false,
+                landed: false
+            };
+            document.getElementById('message').style.display = 'none';
+        }
+
+        function generateStars() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2
+                });
+            }
+        }
+
+        function generateTerrain() {
+            terrain = [];
+            let h = 400;
+            const segmentWidth = 20;
+            const segments = canvas.width / segmentWidth;
+
+            // Place pad somewhere random
+            const padIndex = Math.floor(Math.random() * (segments - 4)) + 2;
+            const padWidthSegments = 3;
+
+            landingPad = {
+                x: padIndex * segmentWidth,
+                width: padWidthSegments * segmentWidth,
+                y: 0 // Set later
+            };
+
+            for (let i = 0; i <= segments; i++) {
+                if (i >= padIndex && i <= padIndex + padWidthSegments) {
+                    // Flat pad
+                    if (i === padIndex) landingPad.y = h;
+                    h = landingPad.y;
+                } else {
+                    // Jagged terrain
+                    h += (Math.random() - 0.5) * 60;
+                    if (h > 580) h = 580;
+                    if (h < 200) h = 200;
+                }
+                terrain.push({ x: i * segmentWidth, y: h });
+            }
+        }
+
+        function update() {
+            if (ship.dead || ship.landed) {
+                if (keys['Space']) {
+                    if (ship.landed) {
+                        level++;
+                        score += Math.floor(ship.fuel / 10);
+                        generateTerrain();
+                    } else {
+                        score = 0;
+                        level = 1;
+                        generateTerrain();
+                    }
+                    resetShip();
+                }
+                return;
+            }
+
+            // Physics
+            ship.vy += GRAVITY;
+
+            // Control
+            if (ship.fuel > 0) {
+                if (keys['ArrowUp']) {
+                    ship.vx += Math.cos(ship.angle) * THRUST_POWER;
+                    ship.vy += Math.sin(ship.angle) * THRUST_POWER;
+                    ship.fuel -= 1;
+
+                    // Particles
+                    const exhaustX = ship.x - Math.cos(ship.angle) * 10;
+                    const exhaustY = ship.y - Math.sin(ship.angle) * 10;
+                    particles.push({
+                        x: exhaustX, y: exhaustY,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2 + 2,
+                        life: 20, color: '#ffaa00'
+                    });
+                }
+                if (keys['ArrowLeft']) {
+                    ship.angle -= ROTATION_SPEED;
+                    ship.fuel -= 0.2;
+                }
+                if (keys['ArrowRight']) {
+                    ship.angle += ROTATION_SPEED;
+                    ship.fuel -= 0.2;
+                }
+            }
+
+            ship.x += ship.vx;
+            ship.y += ship.vy;
+
+            // Screen wrap/bounds
+            if (ship.x < 0) ship.x = canvas.width;
+            if (ship.x > canvas.width) ship.x = 0;
+            if (ship.y < 0) ship.y = 0; // Ceiling
+
+            // Collision Detection
+            // Simple line intersection with terrain
+            // Find segment under ship
+            const segIndex = Math.floor(ship.x / 20);
+            if (segIndex >= 0 && segIndex < terrain.length - 1) {
+                const p1 = terrain[segIndex];
+                const p2 = terrain[segIndex + 1];
+
+                // Interpolate ground height at ship x
+                const t = (ship.x - p1.x) / (p2.x - p1.x);
+                const groundY = p1.y + t * (p2.y - p1.y);
+
+                if (ship.y + 10 >= groundY) { // Hit ground
+                    checkLanding(groundY);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            updateUI();
+        }
+
+        function checkLanding(groundY) {
+            ship.y = groundY - 10; // Snap to ground
+            const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
+
+            // Check if on pad
+            const onPad = ship.x >= landingPad.x && ship.x <= landingPad.x + landingPad.width;
+
+            // Check angle (must be roughly -PI/2 aka -90deg)
+            // Normalize angle to -PI to PI
+            let angle = ship.angle % (Math.PI * 2);
+            if (angle > Math.PI) angle -= Math.PI * 2;
+            if (angle < -Math.PI) angle += Math.PI * 2;
+
+            const upright = Math.abs(angle - (-Math.PI / 2)) < LANDING_MAX_ANGLE;
+
+            if (onPad && speed < LANDING_MAX_SPEED && upright) {
+                ship.landed = true;
+                document.getElementById('message').textContent = "SUCCESS! SPACE TO CONTINUE";
+                document.getElementById('message').style.color = "#00ff00";
+                document.getElementById('message').style.display = "block";
+            } else {
+                ship.dead = true;
+                document.getElementById('message').textContent = "CRASHED! SPACE TO RESTART";
+                document.getElementById('message').style.color = "#ff0000";
+                document.getElementById('message').style.display = "block";
+                // Explosion
+                for (let i = 0; i < 50; i++) {
+                    particles.push({
+                        x: ship.x, y: ship.y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 50, color: '#ff0000'
+                    });
+                }
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('fuel').textContent = Math.floor(ship.fuel);
+            document.getElementById('alt').textContent = Math.floor(600 - ship.y);
+            document.getElementById('score').textContent = score;
+
+            const hspeedEl = document.getElementById('hspeed');
+            const vspeedEl = document.getElementById('vspeed');
+
+            hspeedEl.textContent = ship.vx.toFixed(2);
+            vspeedEl.textContent = ship.vy.toFixed(2);
+
+            // Color code speeds
+            // Safe landing speed is < 2 total magnitude roughly
+            // Just approximate for UI
+            if (Math.abs(ship.vy) > 2) vspeedEl.className = 'stat bad';
+            else vspeedEl.className = 'stat good';
+
+            if (Math.abs(ship.vx) > 1) hspeedEl.className = 'stat warn';
+            else hspeedEl.className = 'stat good';
+
+            if (ship.fuel < 200) document.getElementById('fuel').className = 'stat bad';
+            else document.getElementById('fuel').className = 'stat good';
+        }
+
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Stars
+            ctx.fillStyle = '#fff';
+            stars.forEach(s => {
+                ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // Terrain
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (terrain.length > 0) {
+                ctx.moveTo(terrain[0].x, terrain[0].y);
+                for (let i = 1; i < terrain.length; i++) {
+                    ctx.lineTo(terrain[i].x, terrain[i].y);
+                }
+            }
+            ctx.stroke();
+
+            // Pad
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(landingPad.x, landingPad.y);
+            ctx.lineTo(landingPad.x + landingPad.width, landingPad.y);
+            ctx.stroke();
+
+            // Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 50;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // Ship
+            if (!ship.dead) {
+                ctx.save();
+                ctx.translate(ship.x, ship.y);
+                ctx.rotate(ship.angle + Math.PI / 2); // Adjust for drawing upright
+
+                ctx.strokeStyle = '#00f2ff';
+                ctx.lineWidth = 2;
+
+                // Lander body
+                ctx.beginPath();
+                ctx.rect(-10, -10, 20, 20);
+                ctx.stroke();
+
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(-10, 10); ctx.lineTo(-15, 20);
+                ctx.moveTo(10, 10); ctx.lineTo(15, 20);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            update();
+            draw();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

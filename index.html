@@ -1,574 +1,93 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Lee webcomics interactivos con audio inmersivo y experiencia de lectura premium">
-    <title>Webcomic Reader - Experiencia de Lectura Inmersiva</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 242, 255, 0.15), transparent);
-            border-radius: 50%;
-            top: -250px;
-            right: -250px;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(112, 0, 255, 0.15), transparent);
-            border-radius: 50%;
-            bottom: -200px;
-            left: -200px;
-            animation: float 15s ease-in-out infinite reverse;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            50% {
-                transform: translate(50px, 50px);
-            }
-        }
-
-        .hero-content {
-            text-align: center;
-            z-index: 1;
-            padding: 2rem;
-            max-width: 1200px;
-        }
-
-        .hero h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            background: linear-gradient(135deg, #00f2ff, #7000ff, #00f2ff);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1.5rem;
-            animation: gradient 5s ease infinite, glow 3s ease-in-out infinite;
-        }
-
-        @keyframes gradient {
-
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-
-        @keyframes glow {
-
-            0%,
-            100% {
-                filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.4));
-            }
-
-            50% {
-                filter: drop-shadow(0 0 60px rgba(112, 0, 255, 0.6));
-            }
-        }
-
-        .hero p {
-            font-size: clamp(1.2rem, 3vw, 1.8rem);
-            color: #8b949e;
-            margin-bottom: 3rem;
-            line-height: 1.6;
-        }
-
-        .cta-button {
-            display: inline-block;
-            padding: 1.5rem 4rem;
-            background: linear-gradient(135deg, #00f2ff, #7000ff);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.3rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 40px rgba(0, 242, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s;
-        }
-
-        .cta-button:hover::before {
-            left: 100%;
-        }
-
-        .cta-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 60px rgba(0, 242, 255, 0.5);
-        }
-
-        .comic-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(112, 0, 255, 0.1));
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-
-        .comic-card:hover {
-            transform: translateY(-15px);
-            box-shadow: 0 25px 80px rgba(0, 242, 255, 0.4);
-            border-color: rgba(0, 242, 255, 0.5);
-        }
-
-        .comic-card:hover::before {
-            opacity: 1;
-        }
-
-        .comic-thumbnail {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            position: relative;
-            z-index: 1;
-        }
-
-        .comic-info {
-            padding: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .comic-title {
-            font-size: 1.8rem;
-            color: #00f2ff;
-            margin-bottom: 0.5rem;
-        }
-
-        .comic-description {
-            color: #8b949e;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-
-        .comic-meta {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 0.5rem 1rem;
-            background: rgba(0, 242, 255, 0.2);
-            color: #00f2ff;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .badge.audio {
-            background: rgba(112, 0, 255, 0.2);
-            color: #7000ff;
-        }
-
-        /* Features Section */
-        .features-section {
-            padding: 6rem 2rem;
-            background: #0a0b10;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 3rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .feature-card {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: rgba(22, 27, 34, 0.6);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(0, 242, 255, 0.3);
-        }
-
-        .feature-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            display: block;
-        }
-
-        .feature-title {
-            font-size: 1.5rem;
-            color: #00f2ff;
-            margin-bottom: 1rem;
-        }
-
-        .feature-description {
-            color: #8b949e;
-            line-height: 1.6;
-        }
-
-        /* Footer */
-        .footer {
-            padding: 3rem 2rem;
-            text-align: center;
-            background: #161b22;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-link {
-            color: #8b949e;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-link:hover {
-            color: #00f2ff;
-        }
-
-        /* Admin Link */
-        .admin-link {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 1rem 2rem;
-            background: rgba(22, 27, 34, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50px;
-            color: #8b949e;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-        }
-
-        .admin-link:hover {
-            background: rgba(0, 242, 255, 0.1);
-            border-color: #00f2ff;
-            color: #00f2ff;
-        }
-
-        /* Games Section */
-        .games-section {
-            padding: 6rem 2rem;
-            background: #0a0b10;
-            position: relative;
-        }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .game-card {
-            background: rgba(22, 27, 34, 0.8);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s ease;
-            position: relative;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-card:hover {
-            transform: translateY(-10px);
-            border-color: #00f2ff;
-            box-shadow: 0 10px 40px rgba(0, 242, 255, 0.2);
-        }
-
-        .game-preview {
-            height: 200px;
-            background: #161b22;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .game-preview::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to bottom, transparent, rgba(22, 27, 34, 1));
-        }
-
-        .game-info {
-            padding: 2rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-title {
-            font-size: 1.8rem;
-            color: #fff;
-            margin-bottom: 0.5rem;
-        }
-
-        .game-desc {
-            color: #8b949e;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-
-        .play-btn {
-            margin-top: auto;
-            display: inline-block;
-            padding: 0.8rem 2rem;
-            background: rgba(0, 242, 255, 0.1);
-            color: #00f2ff;
-            text-decoration: none;
-            border-radius: 50px;
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            transition: all 0.3s;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .game-card:hover .play-btn {
-            background: #00f2ff;
-            color: #000;
-        }
-
-        .comics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .comic-card {
-            background: rgba(22, 27, 34, 0.8);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s ease;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            background: linear-gradient(135deg, #00f2ff, #7000ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 4rem;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 3rem;
-            }
-
-            .comics-grid,
-            .features-grid,
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .admin-link {
-                bottom: 1rem;
-                right: 1rem;
-                font-size: 0.8rem;
-                padding: 0.8rem 1.5rem;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Hero Section -->
-    <section class="hero">
-        <canvas id="starfield"></canvas>
-        <div class="hero-content">
-            <h1>Webcomic Reader</h1>
-            <p>La nueva generación de lectura digital. <br>Sumérgete en historias con audio, efectos y movimiento.</p>
-            <a href="#comics" class="cta-button">Explorar Comics</a>
+<!-- Comic Card 1 -->
+<div class="comic-card" onclick="window.location.href='reader.html'">
+    <div class="comic-thumbnail"
+        style="background: linear-gradient(45deg, #00f2ff, #7000ff); display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 5rem;">🌌</span>
+    </div>
+    <div class="comic-info">
+        <h3 class="comic-title">Space Chronicles</h3>
+        <p class="comic-description">Una aventura épica a través del cosmos con música dinámica y efectos de
+            sonido inmersivos.</p>
+        <div class="comic-meta">
+            <span class="badge">2 Páginas</span>
+            <span class="badge audio">🎵 Con Audio</span>
         </div>
-    </section>
+    </div>
+</div>
 
-    <!-- Games Section -->
-    <section class="games-section">
-        <h2 class="section-title">🎮 Arcade Zone</h2>
-        <div class="games-grid">
-            <!-- Space Shooter Card -->
-            <div class="game-card">
-                <div class="game-preview">
-                    🚀
-                </div>
-                <div class="game-info">
-                    <h3 class="game-title">Space Shooter 2025</h3>
-                    <p class="game-desc">Destruye asteroides y enemigos en este shooter de alta velocidad con efectos de
-                        neón.</p>
-                    <a href="game.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-
-            <!-- Snake Card -->
-            <div class="game-card">
-                <div class="game-preview">
-                    🐍
-                </div>
-                <div class="game-info">
-                    <h3 class="game-title">Neon Snake</h3>
-                    <p class="game-desc">El clásico juego de la serpiente reinventado con estilo cyberpunk y brillo
-                        neón.</p>
-                    <a href="snake.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
+<!-- Placeholder para más comics -->
+<div class="comic-card" style="opacity: 0.6; cursor: not-allowed;">
+    <div
+        style="height: 400px; background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(112,0,255,0.1)); display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 4rem;">📚</span>
+    </div>
+    <div class="comic-info">
+        <h3 class="comic-title">Próximamente...</h3>
+        <p class="comic-description">Nuevas historias están en camino. ¡Mantente atento!</p>
+        <div class="comic-meta">
+            <span class="badge">Coming Soon</span>
         </div>
-    </section>
+    </div>
+</div>
 
-    <!-- Comics Grid -->
-    <section id="comics" class="comics-section">
-        <h2 class="section-title">📚 Biblioteca</h2>
-        <div class="comics-grid">
-            <!-- Comic Card 1 -->
-            <div class="comic-card" onclick="window.location.href='reader.html'">
-                <div class="comic-thumbnail"
-                    style="background: linear-gradient(45deg, #00f2ff, #7000ff); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 5rem;">🌌</span>
-                </div>
-                <div class="comic-info">
-                    <h3 class="comic-title">Space Chronicles</h3>
-                    <p class="comic-description">Una aventura épica a través del cosmos con música dinámica y efectos de
-                        sonido inmersivos.</p>
-                    <div class="comic-meta">
-                        <span class="badge">2 Páginas</span>
-                        <span class="badge audio">🎵 Con Audio</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Placeholder para más comics -->
-            <div class="comic-card" style="opacity: 0.6; cursor: not-allowed;">
-                <div
-                    style="height: 400px; background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(112,0,255,0.1)); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 4rem;">📚</span>
-                </div>
-                <div class="comic-info">
-                    <h3 class="comic-title">Próximamente...</h3>
-                    <p class="comic-description">Nuevas historias están en camino. ¡Mantente atento!</p>
-                    <div class="comic-meta">
-                        <span class="badge">Coming Soon</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="comic-card" style="opacity: 0.6; cursor: not-allowed;">
-                <div
-                    style="height: 400px; background: linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,242,255,0.1)); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 4rem;">🎨</span>
-                </div>
-                <div class="comic-info">
-                    <h3 class="comic-title">Más Aventuras</h3>
-                    <p class="comic-description">Estamos trabajando en contenido increíble para ti.</p>
-                    <div class="comic-meta">
-                        <span class="badge">En Desarrollo</span>
-                    </div>
-                </div>
-            </div>
+<div class="comic-card" style="opacity: 0.6; cursor: not-allowed;">
+    <div
+        style="height: 400px; background: linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,242,255,0.1)); display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 4rem;">🎨</span>
+    </div>
+    <div class="comic-info">
+        <h3 class="comic-title">Más Aventuras</h3>
+        <p class="comic-description">Estamos trabajando en contenido increíble para ti.</p>
+        <div class="comic-meta">
+            <span class="badge">En Desarrollo</span>
         </div>
-    </section>
-    <!-- Features Section -->
-    <section class="features-section">
-        <h2 class="section-title">🎯 Características</h2>
-        <div class="features-grid">
-            <div class="feature-card"><span class="feature-icon">🎯</span>
-                <h3 class="feature-title">Panel Focus Mode</h3>
-                <p class="feature-description">Enfócate en cada viñeta con modo de lectura inmersivo</p>
-            </div>
-            <div class="feature-card"><span class="feature-icon">🎵</span>
-                <h3 class="feature-title">Audio Inmersivo</h3>
-                <p class="feature-description">Efectos de sonido que se activan automáticamente al leer</p>
-            </div>
-            <div class="feature-card"><span class="feature-icon">📱</span>
-                <h3 class="feature-title">Responsive</h3>
-                <p class="feature-description">Lee en cualquier dispositivo con gestos táctiles</p>
-            </div>
-            <div class="feature-card"><span class="feature-icon">📖</span>
-                <h3 class="feature-title">4 Modos de Lectura</h3>
-                <p class="feature-description">Single,
-                    Double,
-                    Cascade y Panel Focus</p>
-            </div>
-            <div class="feature-card"><span class="feature-icon">⌨️</span>
-                <h3 class="feature-title">Atajos de Teclado</h3>
-                <p class="feature-description">Navegación rápida con flechas y teclas</p>
-            </div>
-            <div class="feature-card"><span class="feature-icon">🎨</span>
-                <h3 class="feature-title">Diseño Premium</h3>
-                <p class="feature-description">Interfaz moderna con efectos visuales</p>
-            </div>
+    </div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="features-section">
+    <h2 class="section-title">🎯 Características</h2>
+    <div class="features-grid">
+        <div class="feature-card"><span class="feature-icon">🎯</span>
+            <h3 class="feature-title">Panel Focus Mode</h3>
+            <p class="feature-description">Enfócate en cada viñeta con modo de lectura inmersivo</p>
         </div>
-    </section>
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-links"><a href="reader.html" class="footer-link">Leer Comics</a><a href="#"
-                class="footer-link">Sobre Nosotros</a><a href="#" class="footer-link">Contacto</a></div>
-        <p style="color: #8b949e;">Desarrollado con <span style="color: #00f2ff;">Antigravity
-                AI</span>✨<br><small style="opacity: 0.7;">© 2025 Webcomic Reader. Todos los derechos
-                reservados.</small></p>
-    </footer>
-    <!-- Admin Access Link --><a href="admin.html" class="admin-link">⚙️ Admin</a>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="hero.js"></script>
+        <div class="feature-card"><span class="feature-icon">🎵</span>
+            <h3 class="feature-title">Audio Inmersivo</h3>
+            <p class="feature-description">Efectos de sonido que se activan automáticamente al leer</p>
+        </div>
+        <div class="feature-card"><span class="feature-icon">📱</span>
+            <h3 class="feature-title">Responsive</h3>
+            <p class="feature-description">Lee en cualquier dispositivo con gestos táctiles</p>
+        </div>
+        <div class="feature-card"><span class="feature-icon">📖</span>
+            <h3 class="feature-title">4 Modos de Lectura</h3>
+            <p class="feature-description">Single,
+                Double,
+                Cascade y Panel Focus</p>
+        </div>
+        <div class="feature-card"><span class="feature-icon">⌨️</span>
+            <h3 class="feature-title">Atajos de Teclado</h3>
+            <p class="feature-description">Navegación rápida con flechas y teclas</p>
+        </div>
+        <div class="feature-card"><span class="feature-icon">🎨</span>
+            <h3 class="feature-title">Diseño Premium</h3>
+            <p class="feature-description">Interfaz moderna con efectos visuales</p>
+        </div>
+    </div>
+</section>
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-links"><a href="reader.html" class="footer-link">Leer Comics</a><a href="#"
+            class="footer-link">Sobre Nosotros</a><a href="#" class="footer-link">Contacto</a></div>
+    <p style="color: #8b949e;">Desarrollado con <span style="color: #00f2ff;">Antigravity
+            AI</span>✨<br><small style="opacity: 0.7;">© 2025 Webcomic Reader. Todos los derechos
+            reservados.</small></p>
+</footer>
+<!-- Admin Access Link --><a href="admin.html" class="admin-link">⚙️ Admin</a>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="hero.js"></script>
 </body>
 
 </html>

@@ -71,6 +71,23 @@
             gain.gain.linearRampToValueAtTime(0, now + 0.2);
             osc.start(now);
             osc.stop(now + 0.2);
+        } else if (type === 'ufo') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1000, now);
+            osc.frequency.linearRampToValueAtTime(1500, now + 0.1);
+            osc.frequency.linearRampToValueAtTime(1000, now + 0.2);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        } else if (type === 'ufo_die') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(2000, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
         }
     };
 
@@ -91,6 +108,19 @@
         hud.style.letterSpacing = '2px';
         hud.style.textShadow = '0 0 10px #00f2ff';
         hud.style.color = '#fff';
+
+        // Add Controls to HUD
+        const controlsDiv = document.createElement('div');
+        controlsDiv.style.fontSize = '0.8rem';
+        controlsDiv.style.marginTop = '10px';
+        controlsDiv.style.opacity = '0.8';
+        controlsDiv.innerHTML = `
+            <span style="margin-right: 15px;">WASD / ARROWS: Move</span>
+            <span style="margin-right: 15px;">SPACE: Shoot</span>
+            <span style="margin-right: 15px;">Q: Switch Weapon</span>
+            <span>SHIFT: Dash</span>
+        `;
+        hud.appendChild(controlsDiv);
     }
 
     // News/System Ticker
@@ -360,6 +390,52 @@
         }
     }
 
+    class Ufo extends Entity {
+        constructor() {
+            super(0, Math.random() * height);
+            this.radius = 20;
+            this.color = '#00ff00';
+            this.vel = { x: 3, y: (Math.random() - 0.5) * 2 };
+            if (Math.random() < 0.5) {
+                this.pos.x = width;
+                this.vel.x = -3;
+            } else {
+                this.pos.x = 0;
+            }
+            this.timer = 0;
+        }
+
+        update() {
+            super.update();
+            this.timer++;
+            if (this.timer % 30 === 0) playSound('ufo');
+
+            // Remove if off screen
+            if (this.pos.x < -50 || this.pos.x > width + 50) this.dead = true;
+        }
+
+        drawShape(ctx) {
+            ctx.beginPath();
+            ctx.ellipse(0, 5, 20, 8, 0, 0, Math.PI * 2); // Bottom saucer
+            ctx.moveTo(-10, 5);
+            ctx.arc(0, 5, 10, Math.PI, 0); // Dome
+            ctx.moveTo(-20, 5);
+            ctx.lineTo(20, 5); // Line across
+        }
+
+        die() {
+            this.dead = true;
+            playSound('ufo_die');
+            state.shake += 10;
+            state.score += 500;
+            scoreEl.textContent = state.score;
+            showMessage("UFO DESTROYED +500");
+            for (let i = 0; i < 30; i++) {
+                particles.push(new Particle(this.pos.x, this.pos.y, null, '#00ff00'));
+            }
+        }
+    }
+
     class Particle {
         constructor(x, y, vel, color, alpha = 1, life = 30) {
             this.pos = { x, y };
@@ -392,6 +468,8 @@
     let bullets = [];
     let asteroids = [];
     let particles = [];
+    let ufo = null;
+    let ufoTimer = 0;
 
     // --- Level Management ---
     const startLevel = () => {
@@ -435,6 +513,19 @@
             player.draw(ctx);
         }
 
+        // UFO Logic
+        if (!ufo) {
+            ufoTimer++;
+            if (ufoTimer > 1000) { // Spawn UFO occasionally
+                ufo = new Ufo();
+                ufoTimer = 0;
+            }
+        } else {
+            ufo.update();
+            ufo.draw(ctx);
+            if (ufo.dead) ufo = null;
+        }
+
         // Update & Draw Bullets
         bullets = bullets.filter(b => !b.dead);
         bullets.forEach(b => {
@@ -469,8 +560,26 @@
             }
         });
 
+        // Collision: Bullet vs UFO
+        if (ufo) {
+            bullets.forEach(b => {
+                if (!b.dead && vec.mag(vec.sub(ufo.pos, b.pos)) < ufo.radius + 5) {
+                    ufo.die();
+                    b.dead = true;
+                }
+            });
+            // Collision: Player vs UFO
+            if (!player.dead && vec.mag(vec.sub(ufo.pos, player.pos)) < ufo.radius + player.radius) {
+                player.dead = true;
+                state.shake += 20;
+                playSound('explosion');
+                for (let i = 0; i < 50; i++) particles.push(new Particle(player.pos.x, player.pos.y, null, '#00f2ff'));
+                showMessage("GAME OVER - R para Reiniciar");
+            }
+        }
+
         // Level Complete
-        if (asteroids.length === 0) {
+        if (asteroids.length === 0 && !ufo) {
             state.level++;
             bullets = [];
             player.pos = { x: width / 2, y: height / 2 };
@@ -493,6 +602,8 @@
             state.score = 0;
             state.level = 1;
             scoreEl.textContent = 0;
+            ufo = null;
+            ufoTimer = 0;
             startLevel();
         }
     };
