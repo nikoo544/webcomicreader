@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter – Mini‑juego</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #0a0b10;
+        }
+
+        canvas {
+            display: block;
+            background: #0a0b10;
+        }
+
+        .hud {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #e6edf3;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hud">💥 Puntos: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <script src="game.js"></script>
+</body>
+
+</html>
