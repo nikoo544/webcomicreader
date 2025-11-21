@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Snake - Mini-juego</title>
+    <title>Neon Snake RPG - Mini-juego</title>
     <style>
         body {
             margin: 0;
@@ -33,7 +33,7 @@
 
         .hud {
             position: absolute;
-            top: -40px;
+            top: -50px;
             left: 0;
             width: 100%;
             display: flex;
@@ -42,6 +42,19 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 2px;
+            align-items: center;
+        }
+
+        .hud-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 242, 255, 0.3);
         }
 
         #score {
@@ -49,9 +62,28 @@
             text-shadow: 0 0 10px #00f2ff;
         }
 
-        #high-score {
-            color: #7000ff;
-            text-shadow: 0 0 10px #7000ff;
+        #level {
+            color: #ff00aa;
+            text-shadow: 0 0 10px #ff00aa;
+        }
+
+        #xp-bar-container {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #161b22;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        #xp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f2ff, #7000ff);
+            transition: width 0.3s ease;
         }
 
         .overlay {
@@ -60,7 +92,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 11, 16, 0.85);
+            background: rgba(10, 11, 16, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -70,6 +102,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
+            z-index: 10;
         }
 
         .overlay.active {
@@ -107,81 +140,299 @@
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
         }
+
+        /* Custom Art Config Panel (Hidden by default, can be enabled) */
+        #config-panel {
+            display: none;
+            position: absolute;
+            right: -320px;
+            top: 0;
+            width: 300px;
+            background: #161b22;
+            padding: 20px;
+            border-left: 2px solid #00f2ff;
+            height: 100%;
+            color: #fff;
+        }
     </style>
 </head>
 
 <body>
     <div id="game-container">
         <div class="hud">
-            <span>Score: <span id="score-val">0</span></span>
-            <span>Best: <span id="high-score-val">0</span></span>
+            <div class="hud-group">
+                <div class="stat-box">LVL <span id="level-val">1</span></div>
+                <div class="stat-box">XP <span id="xp-val">0</span>/<span id="xp-next">100</span></div>
+            </div>
+            <div class="hud-group">
+                <div class="stat-box">SCORE <span id="score-val">0</span></div>
+                <div class="stat-box">BEST <span id="high-score-val">0</span></div>
+            </div>
         </div>
+
         <canvas id="snakeCanvas" width="600" height="600"></canvas>
+        <div id="xp-bar-container">
+            <div id="xp-bar-fill"></div>
+        </div>
+
         <div id="start-screen" class="overlay active">
-            <h1>NEON SNAKE</h1>
-            <p>Usa las flechas para moverte<br>Come energía para crecer</p>
+            <h1>NEON SNAKE RPG</h1>
+            <p>Usa las flechas para moverte<br>Come energía para subir de nivel</p>
             <button onclick="startGame()">Jugar</button>
         </div>
         <div id="game-over-screen" class="overlay">
             <h1>GAME OVER</h1>
-            <p>Puntuación final: <span id="final-score">0</span></p>
+            <p>Nivel alcanzado: <span id="final-level">1</span><br>Puntuación: <span id="final-score">0</span></p>
             <button onclick="startGame()">Reintentar</button>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURACIÓN DE ARTE ---
+        // Puedes reemplazar estas URLs con tus propias imágenes
+        const GameArt = {
+            head: null, // Ejemplo: 'images/snake-head.png'
+            body: null, // Ejemplo: 'images/snake-body.png'
+            food: null, // Ejemplo: 'images/food.png'
+            background: null // Ejemplo: 'images/bg.png'
+        };
+
+        // Cargar imágenes si existen
+        const images = {};
+        for (const [key, src] of Object.entries(GameArt)) {
+            if (src) {
+                const img = new Image();
+                img.src = src;
+                images[key] = img;
+            }
+        }
+
         const canvas = document.getElementById('snakeCanvas');
         const ctx = canvas.getContext('2d');
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
 
+        // Game State
         let score = 0;
+        let level = 1;
+        let xp = 0;
+        let xpToNextLevel = 100;
         let highScore = localStorage.getItem('snakeHighScore') || 0;
         document.getElementById('high-score-val').textContent = highScore;
 
         let snake = [];
         let food = {};
         let velocity = { x: 0, y: 0 };
-        let gameLoop;
-        let speed = 100;
         let lastRenderTime = 0;
+        let gameRunning = false;
+
+        // Effects
+        let particles = [];
+        let screenShake = 0;
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 4;
+                this.speedY = (Math.random() - 0.5) * 4;
+                this.life = 1.0;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life -= 0.05;
+                this.size *= 0.95;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
 
         function startGame() {
             document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
             snake = [{ x: 10, y: 10 }];
             velocity = { x: 0, y: 0 };
             score = 0;
+            level = 1;
+            xp = 0;
+            xpToNextLevel = 100;
+            updateHUD();
+            placeFood();
+            lastRenderTime = 0;
+            gameRunning = true;
+            particles = [];
+            requestAnimationFrame(main);
+        }
 
-            // Grid (subtle)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-            for (let i = 0; i < tileCount; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * gridSize, 0);
-                ctx.lineTo(i * gridSize, canvas.height);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(0, i * gridSize);
-                ctx.lineTo(canvas.width, i * gridSize);
-                ctx.stroke();
+        function updateHUD() {
+            document.getElementById('score-val').textContent = score;
+            document.getElementById('level-val').textContent = level;
+            document.getElementById('xp-val').textContent = xp;
+            document.getElementById('xp-next').textContent = xpToNextLevel;
+
+            const xpPercent = (xp / xpToNextLevel) * 100;
+            document.getElementById('xp-bar-fill').style.width = `${xpPercent}%`;
+        }
+
+        function main(currentTime) {
+            if (!gameRunning) return;
+
+            window.requestAnimationFrame(main);
+            const secondsSinceLastRender = (currentTime - lastRenderTime) / 1000;
+
+            // Update particles every frame for smoothness
+            updateParticles();
+
+            // Screen shake decay
+            if (screenShake > 0) screenShake *= 0.9;
+            if (screenShake < 0.5) screenShake = 0;
+
+            // Game logic update (capped at 15 FPS base, increases with level)
+            const speedMultiplier = 1 + (level * 0.1);
+            if (secondsSinceLastRender < (1 / (15 * speedMultiplier))) {
+                // Still draw particles/shake even if we don't move snake
+                draw();
+                return;
             }
+
+            lastRenderTime = currentTime;
+            update();
+            draw();
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function update() {
+            if (velocity.x === 0 && velocity.y === 0) return;
+
+            const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+
+            // Wall collision
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || checkSelfCollision(head)) {
+                gameOver();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Eat food
+            if (head.x === food.x && head.y === food.y) {
+                // RPG Elements
+                const xpGain = 20;
+                score += 10 * level;
+                xp += xpGain;
+
+                // Level Up Logic
+                if (xp >= xpToNextLevel) {
+                    level++;
+                    xp = 0;
+                    xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
+                    createExplosion(canvas.width / 2, canvas.height / 2, '#ff00aa'); // Level up explosion
+                    screenShake = 10;
+                } else {
+                    screenShake = 5;
+                }
+
+                // Effects
+                createExplosion((head.x * gridSize) + gridSize / 2, (head.y * gridSize) + gridSize / 2, '#00f2ff');
+
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snakeHighScore', highScore);
+                    document.getElementById('high-score-val').textContent = highScore;
+                }
+
+                updateHUD();
+                placeFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            // Apply screen shake
+            ctx.save();
+            if (screenShake > 0) {
+                const dx = (Math.random() - 0.5) * screenShake;
+                const dy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(dx, dy);
+            }
+
+            // Clear
+            ctx.fillStyle = '#161b22';
+            if (images.background) {
+                ctx.drawImage(images.background, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // Grid (subtle)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                for (let i = 0; i < tileCount; i++) {
+                    ctx.beginPath(); ctx.moveTo(i * gridSize, 0); ctx.lineTo(i * gridSize, canvas.height); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, i * gridSize); ctx.lineTo(canvas.width, i * gridSize); ctx.stroke();
+                }
+            }
+
+            // Draw Particles
+            particles.forEach(p => p.draw(ctx));
 
             // Snake
             snake.forEach((segment, index) => {
-                ctx.fillStyle = index === 0 ? '#00f2ff' : '#00f2ffaa';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#00f2ff';
-                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-                ctx.shadowBlur = 0;
+                const x = segment.x * gridSize;
+                const y = segment.y * gridSize;
+
+                if (index === 0 && images.head) {
+                    ctx.drawImage(images.head, x, y, gridSize, gridSize);
+                } else if (index > 0 && images.body) {
+                    ctx.drawImage(images.body, x, y, gridSize, gridSize);
+                } else {
+                    // Default drawing
+                    ctx.fillStyle = index === 0 ? '#00f2ff' : '#00f2ffaa';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00f2ff';
+                    ctx.fillRect(x, y, gridSize - 2, gridSize - 2);
+                    ctx.shadowBlur = 0;
+                }
             });
 
             // Food
-            ctx.fillStyle = '#7000ff';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#7000ff';
-            ctx.beginPath();
-            ctx.arc((food.x * gridSize) + gridSize / 2, (food.y * gridSize) + gridSize / 2, gridSize / 2 - 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            const fx = food.x * gridSize;
+            const fy = food.y * gridSize;
+            if (images.food) {
+                ctx.drawImage(images.food, fx, fy, gridSize, gridSize);
+            } else {
+                ctx.fillStyle = '#7000ff';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#7000ff';
+                ctx.beginPath();
+                ctx.arc(fx + gridSize / 2, fy + gridSize / 2, gridSize / 2 - 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
         }
 
         function placeFood() {
@@ -189,38 +440,32 @@
                 x: Math.floor(Math.random() * tileCount),
                 y: Math.floor(Math.random() * tileCount)
             };
-            // Don't spawn on snake
             if (checkSelfCollision(food)) placeFood();
         }
 
         function checkSelfCollision(pos) {
             return snake.some((segment, index) => {
-                if (index === 0 && (velocity.x !== 0 || velocity.y !== 0)) return false; // Ignore head if moving
                 return segment.x === pos.x && segment.y === pos.y;
             });
         }
 
         function gameOver() {
+            gameRunning = false;
             document.getElementById('final-score').textContent = score;
+            document.getElementById('final-level').textContent = level;
             document.getElementById('game-over-screen').classList.add('active');
         }
 
         window.addEventListener('keydown', e => {
             switch (e.key) {
-                case 'ArrowUp':
-                    if (velocity.y === 0) velocity = { x: 0, y: -1 };
-                    break;
-                case 'ArrowDown':
-                    if (velocity.y === 0) velocity = { x: 0, y: 1 };
-                    break;
-                case 'ArrowLeft':
-                    if (velocity.x === 0) velocity = { x: -1, y: 0 };
-                    break;
-                case 'ArrowRight':
-                    if (velocity.x === 0) velocity = { x: 1, y: 0 };
-                    break;
+                case 'ArrowUp': if (velocity.y === 0) velocity = { x: 0, y: -1 }; break;
+                case 'ArrowDown': if (velocity.y === 0) velocity = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': if (velocity.x === 0) velocity = { x: -1, y: 0 }; break;
+                case 'ArrowRight': if (velocity.x === 0) velocity = { x: 1, y: 0 }; break;
             }
         });
+
+        draw();
     </script>
 </body>
 
