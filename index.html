@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AG Reader - Panel Focus Mode</title>
+    <meta name="description" content="Immersive webcomic reader with panel-by-panel navigation and audio support">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="brand">AG READER</div>
+        <div class="header-controls">
+            <div class="mode-controls">
+                <button class="icon-btn" id="singleModeBtn" title="Single Page">
+                    <i class="fa-regular fa-file"></i>
+                </button>
+                <button class="icon-btn" id="doubleModeBtn" title="Double Page">
+                    <i class="fa-solid fa-book-open"></i>
+                </button>
+                <button class="icon-btn" id="cascadeModeBtn" title="Cascade / Webtoon">
+                    <i class="fa-solid fa-scroll"></i>
+                </button>
+                <button class="icon-btn active" id="panelModeBtn" title="Panel Focus Mode">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                </button>
+            </div>
+            <div class="divider"></div>
+            <button class="icon-btn" id="audioToggle" title="Toggle Audio">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <button class="icon-btn" id="themeToggle" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Reader Area -->
+    <main id="mainReader">
+        <div class="loader" id="loader"></div>
+        <div class="comic-container" id="comicContainer">
+            <!-- Content will be dynamically loaded here -->
+        </div>
+
+        <!-- Panel Focus Overlay -->
+        <div class="panel-focus-overlay" id="panelOverlay">
+            <div class="panel-focus-container">
+                <div class="panel-wrapper" id="panelWrapper">
+                    <!-- Focused panel will appear here -->
+                </div>
+                <div class="panel-audio-indicator" id="audioIndicator">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>Audio activo</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Navigation Controls -->
+    <div class="reader-controls" id="readerControls">
+        <button class="nav-btn" id="prevBtn" title="Previous">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div class="page-indicator">
+            <span id="currentPage">1</span> / <span id="totalPages">0</span>
+        </div>
+
+        <button class="nav-btn" id="nextBtn" title="Next">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <div class="divider"></div>
+
+        <button class="icon-btn" id="zoomIn" title="Zoom In">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+        </button>
+
+        <button class="icon-btn" id="zoomOut" title="Zoom Out">
+            <i class="fa-solid fa-magnifying-glass-minus"></i>
+        </button>
+
+        <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">
+            <i class="fa-solid fa-expand"></i>
+        </button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Panel Navigation Hint -->
+    <div class="navigation-hint" id="navHint">
+        <div class="hint-content">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p>Usa las flechas o desliza para navegar entre paneles</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

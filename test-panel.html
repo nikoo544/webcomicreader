@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Panel Mode</title>
+    <style>
+        body {
+            background: #0a0b10;
+            color: #e6edf3;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+        }
+
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        h1 {
+            color: #00f2ff;
+            margin-bottom: 1rem;
+        }
+
+        .test-result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #00f2ff;
+        }
+
+        .error {
+            border-left-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .success {
+            border-left-color: #44ff44;
+            color: #44ff44;
+        }
+
+        button {
+            background: #00f2ff;
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0.5rem;
+        }
+
+        button:hover {
+            background: #7000ff;
+        }
+
+        #canvas {
+            border: 2px solid #00f2ff;
+            margin-top: 1rem;
+            max-width: 100%;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🔍 Test de Panel Mode</h1>
+
+        <div id="results"></div>
+
+        <button onclick="testImageLoad()">1. Probar Carga de Imagen</button>
+        <button onclick="testPanelCrop()">2. Probar Recorte de Panel</button>
+        <button onclick="openReader()">3. Abrir Reader</button>
+
+        <canvas id="canvas"></canvas>
+
+        <div class="test-result">
+            <h3>Instrucciones:</h3>
+            <ol>
+                <li>Haz clic en "Probar Carga de Imagen" para verificar que page1.png se carga</li>
+                <li>Haz clic en "Probar Recorte de Panel" para ver el primer panel recortado</li>
+                <li>Si ambos funcionan, haz clic en "Abrir Reader"</li>
+                <li>Abre la consola del navegador (F12) para ver los logs</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Panel configuration from your script.js
+        const panel1 = {
+            id: 'panel1',
+            crop: { x: 2.5, y: 2.7, width: 97.4, height: 48.2 }
+        };
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<p>${message}</p>`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        function testImageLoad() {
+            results.innerHTML = '';
+            addResult('🔄 Cargando imagen...', 'info');
+
+            const img = new Image();
+
+            img.onerror = (error) => {
+                addResult('❌ Error: No se pudo cargar images/page1.png', 'error');
+                addResult('Verifica que la imagen existe en la carpeta images/', 'error');
+                console.error('Image load error:', error);
+            };
+
+            img.onload = () => {
+                addResult(`✅ Imagen cargada exitosamente!`, 'success');
+                addResult(`Dimensiones: ${img.width} x ${img.height}px`, 'success');
+
+                // Show the image
+                canvas.width = Math.min(img.width, 700);
+                canvas.height = (canvas.width / img.width) * img.height;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                console.log('Image loaded:', img.width, 'x', img.height);
+            };
+
+            img.src = 'images/page1.png';
+        }
+
+        function testPanelCrop() {
+            results.innerHTML = '';
+            addResult('🔄 Probando recorte de panel...', 'info');
+            addResult(`Panel config: x=${panel1.crop.x}%, y=${panel1.crop.y}%, w=${panel1.crop.width}%, h=${panel1.crop.height}%`, 'info');
+
+            const img = new Image();
+
+            img.onerror = () => {
+                addResult('❌ Error: No se pudo cargar la imagen', 'error');
+            };
+
+            img.onload = () => {
+                // Calculate crop dimensions
+                const cropX = (panel1.crop.x / 100) * img.width;
+                const cropY = (panel1.crop.y / 100) * img.height;
+                const cropWidth = (panel1.crop.width / 100) * img.width;
+                const cropHeight = (panel1.crop.height / 100) * img.height;
+
+                addResult(`✅ Imagen cargada: ${img.width} x ${img.height}px`, 'success');
+                addResult(`Recortando desde: (${Math.round(cropX)}, ${Math.round(cropY)})`, 'info');
+                addResult(`Tamaño del recorte: ${Math.round(cropWidth)} x ${Math.round(cropHeight)}px`, 'info');
+
+                // Set canvas size to crop size
+                canvas.width = cropWidth;
+                canvas.height = cropHeight;
+
+                // Draw cropped image
+                ctx.drawImage(
+                    img,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, cropWidth, cropHeight
+                );
+
+                addResult('✅ Panel recortado y mostrado arriba!', 'success');
+                console.log('Panel cropped successfully');
+            };
+
+            img.src = 'images/page1.png';
+        }
+
+        function openReader() {
+            window.location.href = 'index.html';
+        }
+
+        // Auto-run first test
+        window.addEventListener('load', () => {
+            addResult('👋 Bienvenido al test de Panel Mode', 'info');
+            addResult('Haz clic en los botones para probar cada funcionalidad', 'info');
+        });
+    </script>
+</body>
+
+</html>

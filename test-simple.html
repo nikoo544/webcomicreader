@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple de Panel</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #00f2ff;
+        }
+
+        .controls {
+            margin: 2rem 0;
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            background: #00f2ff;
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #7000ff;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .panel-container {
+            position: relative;
+            border: 3px solid #00f2ff;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+            overflow: hidden;
+            background: #000;
+        }
+
+        .info {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            max-width: 800px;
+        }
+
+        .info h3 {
+            margin-top: 0;
+            color: #00f2ff;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎯 Test Simple de Recorte de Paneles</h1>
+
+    <div class="info">
+        <h3>Panel Actual: <span id="panelName">-</span></h3>
+        <pre id="panelInfo">Cargando...</pre>
+    </div>
+
+    <div class="controls">
+        <button id="prevBtn">⬅️ Anterior</button>
+        <button id="nextBtn">➡️ Siguiente</button>
+    </div>
+
+    <div class="panel-container" id="panelContainer">
+        <!-- Panel will be rendered here -->
+    </div>
+
+    <div class="info">
+        <h3>Instrucciones:</h3>
+        <p>• Usa los botones o las flechas del teclado para navegar</p>
+        <p>• Cada panel debería mostrar SOLO la parte definida de la imagen</p>
+        <p>• Si ves partes incorrectas, hay un problema con el algoritmo</p>
+    </div>
+
+    <script>
+        // Configuración exacta de tu script.js
+        const panels = [
+            {
+                id: 'panel1',
+                crop: { x: 1.8, y: 2.4, width: 96.2, height: 33.7 }
+            },
+            {
+                id: 'panel2',
+                crop: { x: 4.3, y: 36.5, width: 94, height: 30.9 }
+            },
+            {
+                id: 'panel3',
+                crop: { x: 0.8, y: 69.4, width: 97.4, height: 29.7 }
+            }
+        ];
+
+        const imagePath = 'images/page1.png';
+
+        let currentIndex = 0;
+        const panelContainer = document.getElementById('panelContainer');
+        const panelName = document.getElementById('panelName');
+        const panelInfo = document.getElementById('panelInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function renderPanel() {
+            const panel = panels[currentIndex];
+
+            // Update info
+            panelName.textContent = panel.id;
+            panelInfo.textContent = `Crop: x=${panel.crop.x}%, y=${panel.crop.y}%, w=${panel.crop.width}%, h=${panel.crop.height}%\n` +
+                `Rango Y: ${panel.crop.y}% → ${(panel.crop.y + panel.crop.height).toFixed(1)}%`;
+
+            // Clear container
+            panelContainer.innerHTML = '';
+
+            // Load image
+            const img = new Image();
+
+            img.onload = () => {
+                console.log('='.repeat(50));
+                console.log('Renderizando:', panel.id);
+                console.log('Imagen:', img.width, 'x', img.height);
+
+                // Calculate crop in pixels
+                const cropX = (panel.crop.x / 100) * img.width;
+                const cropY = (panel.crop.y / 100) * img.height;
+                const cropWidth = (panel.crop.width / 100) * img.width;
+                const cropHeight = (panel.crop.height / 100) * img.height;
+
+                console.log('Crop (px):', {
+                    x: Math.round(cropX),
+                    y: Math.round(cropY),
+                    width: Math.round(cropWidth),
+                    height: Math.round(cropHeight)
+                });
+
+                // Calculate container size
+                const maxWidth = window.innerWidth * 0.9;
+                const maxHeight = window.innerHeight * 0.6;
+                const aspectRatio = cropWidth / cropHeight;
+
+                let containerWidth, containerHeight;
+
+                if (maxWidth / aspectRatio <= maxHeight) {
+                    containerWidth = maxWidth;
+                    containerHeight = maxWidth / aspectRatio;
+                } else {
+                    containerHeight = maxHeight;
+                    containerWidth = maxHeight * aspectRatio;
+                }
+
+                panelContainer.style.width = containerWidth + 'px';
+                panelContainer.style.height = containerHeight + 'px';
+
+                // Calculate scale
+                const scale = containerWidth / cropWidth;
+
+                console.log('Container:', Math.round(containerWidth), 'x', Math.round(containerHeight));
+                console.log('Scale:', scale.toFixed(3));
+
+                // Position image
+                img.style.position = 'absolute';
+                img.style.width = (img.width * scale) + 'px';
+                img.style.height = (img.height * scale) + 'px';
+                img.style.left = (-cropX * scale) + 'px';
+                img.style.top = (-cropY * scale) + 'px';
+                img.style.objectFit = 'none';
+
+                console.log('Image size:', Math.round(img.width * scale), 'x', Math.round(img.height * scale));
+                console.log('Image offset:', Math.round(-cropX * scale), ',', Math.round(-cropY * scale));
+                console.log('='.repeat(50));
+
+                panelContainer.appendChild(img);
+            };
+
+            img.onerror = () => {
+                panelContainer.innerHTML = '<p style="color: #ff4444; padding: 2rem;">Error al cargar imagen</p>';
+            };
+
+            img.src = imagePath;
+
+            // Update buttons
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === panels.length - 1;
+        }
+
+        function navigate(direction) {
+            if (direction === 'next' && currentIndex < panels.length - 1) {
+                currentIndex++;
+                renderPanel();
+            } else if (direction === 'prev' && currentIndex > 0) {
+                currentIndex--;
+                renderPanel();
+            }
+        }
+
+        // Event listeners
+        prevBtn.addEventListener('click', () => navigate('prev'));
+        nextBtn.addEventListener('click', () => navigate('next'));
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') navigate('next');
+            if (e.key === 'ArrowLeft') navigate('prev');
+        });
+
+        // Initial render
+        renderPanel();
+    </script>
+</body>
+
+</html>

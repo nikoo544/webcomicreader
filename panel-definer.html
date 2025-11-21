@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Definer - AG Reader Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0b10;
+            color: #e6edf3;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #00f2ff, #7000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+        }
+
+        .canvas-area {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-area {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #imageCanvas {
+            max-width: 100%;
+            border: 2px solid #00f2ff;
+            border-radius: 8px;
+            cursor: crosshair;
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: block;
+            color: #00f2ff;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #e6edf3;
+            cursor: pointer;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #e6edf3;
+            font-size: 1rem;
+        }
+
+        .button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #00f2ff, #7000ff);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-bottom: 0.5rem;
+        }
+
+        .button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+        }
+
+        .button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e6edf3;
+        }
+
+        .panel-list {
+            margin-top: 1rem;
+        }
+
+        .panel-item {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #00f2ff;
+        }
+
+        .panel-item h4 {
+            color: #00f2ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .panel-item p {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin: 0.25rem 0;
+        }
+
+        .panel-item button {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .code-output {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #7000ff;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .code-output pre {
+            color: #e6edf3;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+        }
+
+        .instructions {
+            background: rgba(112, 0, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #7000ff;
+        }
+
+        .instructions h3 {
+            color: #7000ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions ol {
+            margin-left: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎨 Panel Definer Tool</h1>
+
+        <div class="workspace">
+            <div class="canvas-area">
+                <div class="instructions">
+                    <h3>📋 Instrucciones</h3>
+                    <ol>
+                        <li>Carga una imagen de tu página de cómic</li>
+                        <li>Haz clic y arrastra en la imagen para definir un panel</li>
+                        <li>Ajusta los valores si es necesario</li>
+                        <li>Agrega información de audio si el panel lo tiene</li>
+                        <li>Haz clic en "Agregar Panel"</li>
+                        <li>Repite para cada panel</li>
+                        <li>Copia el código generado a tu script.js</li>
+                    </ol>
+                </div>
+                <canvas id="imageCanvas"></canvas>
+            </div>
+
+            <div class="controls-area">
+                <div class="control-group">
+                    <label>📁 Cargar Imagen de Página</label>
+                    <input type="file" id="imageUpload" accept="image/*">
+                </div>
+
+                <div class="control-group">
+                    <label>🆔 ID del Panel</label>
+                    <input type="text" id="panelId" placeholder="p1_panel1">
+                </div>
+
+                <div class="control-group">
+                    <label>📐 Posición X (%)</label>
+                    <input type="number" id="cropX" min="0" max="100" value="0" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>📐 Posición Y (%)</label>
+                    <input type="number" id="cropY" min="0" max="100" value="0" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>📏 Ancho (%)</label>
+                    <input type="number" id="cropWidth" min="0" max="100" value="100" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>📏 Alto (%)</label>
+                    <input type="number" id="cropHeight" min="0" max="100" value="100" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hasAudio">
+                        <label for="hasAudio">🎵 Este panel tiene audio</label>
+                    </div>
+                </div>
+
+                <div class="control-group" id="audioGroup" style="display: none;">
+                    <label>🎵 Ruta del Archivo de Audio</label>
+                    <input type="text" id="audioPath" placeholder="audio/panel1_sound.mp3">
+                </div>
+
+                <button class="button" id="addPanel">➕ Agregar Panel</button>
+                <button class="button secondary" id="clearPanels">🗑️ Limpiar Todo</button>
+
+                <div class="panel-list">
+                    <h3 style="color: #00f2ff; margin-bottom: 1rem;">Paneles Definidos</h3>
+                    <div id="panelsList"></div>
+                </div>
+
+                <div class="code-output">
+                    <h3 style="color: #7000ff; margin-bottom: 1rem;">📋 Código Generado</h3>
+                    <pre id="codeOutput">// Los paneles aparecerán aquí...</pre>
+                </div>
+
+                <button class="button" id="copyCode">📋 Copiar Código</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageUpload = document.getElementById('imageUpload');
+        const panelsList = document.getElementById('panelsList');
+        const codeOutput = document.getElementById('codeOutput');
+
+        let currentImage = null;
+        let panels = [];
+        let isDrawing = false;
+        let startX, startY;
+
+        // Load image
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        currentImage = img;
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Canvas drawing
+        canvas.addEventListener('mousedown', (e) => {
+            if (!currentImage) return;
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            startY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing || !currentImage) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const currentX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const currentY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Redraw image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(currentImage, 0, 0);
+
+            // Draw existing panels
+            drawExistingPanels();
+
+            // Draw current selection
+            ctx.strokeStyle = '#00f2ff';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+            ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
+            ctx.fillRect(startX, startY, currentX - startX, currentY - startY);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing || !currentImage) return;
+            isDrawing = false;
+
+            const rect = canvas.getBoundingClientRect();
+            const endX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const endY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Calculate percentages
+            const x = Math.min(startX, endX);
+            const y = Math.min(startY, endY);
+            const width = Math.abs(endX - startX);
+            const height = Math.abs(endY - startY);
+
+            const xPercent = (x / canvas.width * 100).toFixed(1);
+            const yPercent = (y / canvas.height * 100).toFixed(1);
+            const widthPercent = (width / canvas.width * 100).toFixed(1);
+            const heightPercent = (height / canvas.height * 100).toFixed(1);
+
+            // Update inputs
+            document.getElementById('cropX').value = xPercent;
+            document.getElementById('cropY').value = yPercent;
+            document.getElementById('cropWidth').value = widthPercent;
+            document.getElementById('cropHeight').value = heightPercent;
+        });
+
+        function drawExistingPanels() {
+            panels.forEach((panel, index) => {
+                const x = (panel.crop.x / 100) * canvas.width;
+                const y = (panel.crop.y / 100) * canvas.height;
+                const w = (panel.crop.width / 100) * canvas.width;
+                const h = (panel.crop.height / 100) * canvas.height;
+
+                ctx.strokeStyle = '#7000ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, w, h);
+                ctx.fillStyle = 'rgba(112, 0, 255, 0.1)';
+                ctx.fillRect(x, y, w, h);
+
+                // Draw panel number
+                ctx.fillStyle = '#7000ff';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText(`#${index + 1}`, x + 10, y + 30);
+            });
+        }
+
+        // Audio checkbox
+        document.getElementById('hasAudio').addEventListener('change', (e) => {
+            document.getElementById('audioGroup').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // Add panel
+        document.getElementById('addPanel').addEventListener('click', () => {
+            const panelId = document.getElementById('panelId').value || `panel${panels.length + 1}`;
+            const hasAudio = document.getElementById('hasAudio').checked;
+            const audioPath = document.getElementById('audioPath').value;
+
+            const panel = {
+                id: panelId,
+                crop: {
+                    x: parseFloat(document.getElementById('cropX').value),
+                    y: parseFloat(document.getElementById('cropY').value),
+                    width: parseFloat(document.getElementById('cropWidth').value),
+                    height: parseFloat(document.getElementById('cropHeight').value)
+                },
+                audio: hasAudio ? audioPath : null,
+                hasAudio: hasAudio
+            };
+
+            panels.push(panel);
+            updatePanelsList();
+            updateCodeOutput();
+
+            // Redraw canvas
+            if (currentImage) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(currentImage, 0, 0);
+                drawExistingPanels();
+            }
+
+            // Reset form
+            document.getElementById('panelId').value = '';
+            document.getElementById('hasAudio').checked = false;
+            document.getElementById('audioPath').value = '';
+            document.getElementById('audioGroup').style.display = 'none';
+        });
+
+        // Clear panels
+        document.getElementById('clearPanels').addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres eliminar todos los paneles?')) {
+                panels = [];
+                updatePanelsList();
+                updateCodeOutput();
+                if (currentImage) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(currentImage, 0, 0);
+                }
+            }
+        });
+
+        function updatePanelsList() {
+            panelsList.innerHTML = '';
+            panels.forEach((panel, index) => {
+                const div = document.createElement('div');
+                div.className = 'panel-item';
+                div.innerHTML = `
+                    <h4>Panel ${index + 1}: ${panel.id}</h4>
+                    <p>Posición: ${panel.crop.x}%, ${panel.crop.y}%</p>
+                    <p>Tamaño: ${panel.crop.width}% × ${panel.crop.height}%</p>
+                    ${panel.hasAudio ? `<p>🎵 Audio: ${panel.audio}</p>` : ''}
+                    <button onclick="removePanel(${index})">Eliminar</button>
+                `;
+                panelsList.appendChild(div);
+            });
+        }
+
+        function removePanel(index) {
+            panels.splice(index, 1);
+            updatePanelsList();
+            updateCodeOutput();
+            if (currentImage) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(currentImage, 0, 0);
+                drawExistingPanels();
+            }
+        }
+
+        function updateCodeOutput() {
+            const code = `panels: [\n${panels.map(panel => `    {
+        id: '${panel.id}',
+        crop: { x: ${panel.crop.x}, y: ${panel.crop.y}, width: ${panel.crop.width}, height: ${panel.crop.height} },
+        audio: ${panel.audio ? `'${panel.audio}'` : 'null'},
+        hasAudio: ${panel.hasAudio}
+    }`).join(',\n')}\n]`;
+
+            codeOutput.textContent = code;
+        }
+
+        // Copy code
+        document.getElementById('copyCode').addEventListener('click', () => {
+            navigator.clipboard.writeText(codeOutput.textContent).then(() => {
+                alert('✅ Código copiado al portapapeles!');
+            });
+        });
+
+        // Make removePanel global
+        window.removePanel = removePanel;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Uso - AG Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0b10 0%, #1a1b26 100%);
+            color: #e6edf3;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(22, 27, 34, 0.8);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #00f2ff, #7000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: #00f2ff;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            color: #7000ff;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 242, 255, 0.2);
+        }
+
+        .feature-card h4 {
+            color: #00f2ff;
+            margin-bottom: 0.5rem;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            color: #00f2ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: 4px solid #00f2ff;
+        }
+
+        .code-block pre {
+            color: #e6edf3;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #00f2ff, #7000ff);
+            color: #000;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 1rem 0;
+            transition: transform 0.3s ease;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight {
+            background: rgba(112, 0, 255, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            color: #7000ff;
+            font-weight: bold;
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎨 AG Reader - Guía de Uso</h1>
+        <p>Sistema de lectura de webcomics con modo panel focus y audio inmersivo</p>
+
+        <a href="index.html" class="button">🚀 Abrir el Reader</a>
+
+        <h2>✨ Características Principales</h2>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>📄 Single Page</h4>
+                <p>Lectura tradicional página por página</p>
+            </div>
+            <div class="feature-card">
+                <h4>📖 Double Page</h4>
+                <p>Vista de dos páginas simultáneas</p>
+            </div>
+            <div class="feature-card">
+                <h4>📜 Cascade</h4>
+                <p>Scroll vertical continuo tipo webtoon</p>
+            </div>
+            <div class="feature-card">
+                <h4>🎯 Panel Focus</h4>
+                <p>Lectura panel por panel inmersiva</p>
+            </div>
+        </div>
+
+        <h2>🎮 Controles</h2>
+
+        <h3>⌨️ Teclado</h3>
+        <ul>
+            <li><code>←</code> <code>→</code> - Navegar entre paneles/páginas</li>
+            <li><code>Espacio</code> - Siguiente panel/página</li>
+            <li><code>M</code> - Toggle audio on/off</li>
+            <li><code>ESC</code> - Salir del modo panel</li>
+        </ul>
+
+        <h3>📱 Touch/Móvil</h3>
+        <ul>
+            <li><strong>Swipe izquierda</strong> - Siguiente panel</li>
+            <li><strong>Swipe derecha</strong> - Panel anterior</li>
+        </ul>
+
+        <h3>🖱️ Botones en Pantalla</h3>
+        <ul>
+            <li><strong>Header</strong> - Cambiar modo de lectura y toggle audio</li>
+            <li><strong>Footer</strong> - Navegación, zoom, y fullscreen</li>
+        </ul>
+
+        <h2>🎵 Sistema de Audio</h2>
+
+        <p>Cada panel puede tener su propio archivo de audio que se reproduce automáticamente:</p>
+
+        <ul>
+            <li>✅ Indicador visual cuando hay audio activo</li>
+            <li>✅ Control de audio global (botón o tecla M)</li>
+            <li>✅ Reproducción automática al mostrar el panel</li>
+            <li>✅ Audio se detiene al cambiar de panel</li>
+        </ul>
+
+        <div class="warning">
+            <strong>⚠️ Nota:</strong> Los archivos de audio de ejemplo no están incluidos. Agrega tus propios archivos
+            MP3/WAV en la carpeta <code>audio/</code>
+        </div>
+
+        <h2>⚙️ Configuración de Paneles</h2>
+
+        <p>Para configurar tus propios paneles, edita el archivo <code>script.js</code>:</p>
+
+        <div class="code-block">
+            <pre>const comicData = [
+    {
+        page: 1,
+        image: 'images/page1.png',
+        panels: [
+            {
+                id: 'p1_panel1',
+                // Coordenadas en porcentajes (x, y, width, height)
+                crop: { x: 0, y: 0, width: 100, height: 50 },
+                audio: 'audio/panel1_sound.mp3',
+                hasAudio: true
+            },
+            {
+                id: 'p1_panel2',
+                crop: { x: 0, y: 50, width: 100, height: 50 },
+                audio: null,
+                hasAudio: false
+            }
+        ]
+    }
+];</pre>
+        </div>
+
+        <h3>Parámetros de Crop</h3>
+        <ul>
+            <li><code>x, y</code> - Posición inicial del panel (0-100%)</li>
+            <li><code>width, height</code> - Dimensiones del panel (0-100%)</li>
+        </ul>
+
+        <p>Estos valores son <span class="highlight">relativos a la imagen completa</span> de la página.</p>
+
+        <h2>🎨 Personalización</h2>
+
+        <p>Puedes personalizar los colores editando las variables CSS en <code>style.css</code>:</p>
+
+        <div class="code-block">
+            <pre>:root {
+    --bg-color: #0a0b10;
+    --primary-color: #00f2ff;
+    --secondary-color: #7000ff;
+    --text-color: #e6edf3;
+    /* ... más variables */
+}</pre>
+        </div>
+
+        <h2>📁 Estructura de Archivos</h2>
+
+        <div class="code-block">
+            <pre>webcomic/
+├── index.html          # Página principal
+├── style.css           # Estilos
+├── script.js           # Lógica
+├── GUIDE.html          # Esta guía
+├── README.md           # Documentación
+├── images/             # Páginas del cómic
+│   ├── page1.png
+│   └── page2.png
+└── audio/              # Archivos de audio
+    ├── panel1_sound.mp3
+    └── panel3_sound.mp3</pre>
+        </div>
+
+        <h2>💡 Consejos de Uso</h2>
+
+        <ul>
+            <li>🎯 <strong>Panel Focus Mode</strong> es ideal para lectura vertical tipo webtoon</li>
+            <li>🎨 Define los paneles con precisión para mejor experiencia</li>
+            <li>🎵 Usa audios cortos (1-5 segundos) para no interrumpir la lectura</li>
+            <li>📱 El sistema funciona perfectamente en móviles con touch gestures</li>
+            <li>⚡ Las imágenes se cargan de forma optimizada (lazy loading)</li>
+        </ul>
+
+        <h2>🚀 Cómo Empezar</h2>
+
+        <ol>
+            <li>Abre <code>index.html</code> en tu navegador</li>
+            <li>Haz clic en el botón <span class="highlight">Panel Focus</span> (icono de grip vertical)</li>
+            <li>Usa las flechas del teclado o los botones para navegar</li>
+            <li>Experimenta con los diferentes modos de lectura</li>
+            <li>Agrega tus propias páginas e imágenes</li>
+        </ol>
+
+        <a href="index.html" class="button">🎨 Comenzar a Leer</a>
+
+        <hr style="margin: 2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+
+        <p style="text-align: center; color: #8b949e; font-size: 0.9rem;">
+            Desarrollado con <span style="color: #00f2ff;">Antigravity AI</span> ✨
+        </p>
+    </div>
+</body>
+
+</html>

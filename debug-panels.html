@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Visual - Paneles</title>
+    <style>
+        body {
+            background: #0a0b10;
+            color: #e6edf3;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00f2ff;
+            margin-bottom: 1rem;
+        }
+
+        .viewer {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .image-area {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            border: 2px solid #00f2ff;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .panel-overlay {
+            position: absolute;
+            border: 3px solid;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .panel-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .info-area {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .panel-info {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .error {
+            background: rgba(255, 68, 68, 0.1);
+            border-left-color: #ff4444;
+        }
+
+        button {
+            background: #00f2ff;
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+
+        button:hover {
+            background: #7000ff;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+        }
+
+        .color-panel-1 {
+            border-color: #ff0000;
+        }
+
+        .color-panel-2 {
+            border-color: #00ff00;
+        }
+
+        .color-panel-3 {
+            border-color: #0000ff;
+        }
+
+        .color-panel-4 {
+            border-color: #ffff00;
+        }
+
+        .color-panel-5 {
+            border-color: #ff00ff;
+        }
+
+        .color-panel-6 {
+            border-color: #00ffff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Debug Visual de Paneles</h1>
+        <p>Esta herramienta te muestra exactamente cómo están definidos tus paneles sobre la imagen.</p>
+
+        <div>
+            <button onclick="loadImage()">Cargar Imagen</button>
+            <button onclick="togglePanels()">Toggle Paneles</button>
+            <button onclick="window.location.href='index.html'">Abrir Reader</button>
+        </div>
+
+        <div class="viewer">
+            <div class="image-area">
+                <h3 style="color: #00f2ff;">Vista de Imagen con Paneles</h3>
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="canvas"></canvas>
+                    <div id="overlays"></div>
+                </div>
+            </div>
+
+            <div class="info-area">
+                <h3 style="color: #00f2ff;">Información de Paneles</h3>
+                <div id="info"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Copiar la configuración de tu script.js
+        const comicData = [
+            {
+                page: 1,
+                image: 'images/page1.png',
+                panels: [
+                    {
+                        id: 'panel1',
+                        crop: { x: 1.1, y: 1.2, width: 98.5, height: 50.3 },
+                        audio: null,
+                        hasAudio: false
+                    },
+                    {
+                        id: 'panel2',
+                        crop: { x: 1.5, y: 40.7, width: 96.3, height: 58.3 },
+                        audio: null,
+                        hasAudio: false
+                    }
+                ]
+            }
+        ];
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const overlays = document.getElementById('overlays');
+        const info = document.getElementById('info');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        let showPanels = true;
+        let currentImage = null;
+
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+
+        function loadImage() {
+            info.innerHTML = '<p>Cargando imagen...</p>';
+
+            const img = new Image();
+            img.onload = () => {
+                currentImage = img;
+
+                // Set canvas size
+                const maxWidth = 800;
+                const scale = maxWidth / img.width;
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                // Draw image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Draw panels
+                drawPanels(scale);
+
+                // Show info
+                showInfo(img, scale);
+            };
+
+            img.onerror = () => {
+                info.innerHTML = '<div class="error"><p>❌ Error al cargar la imagen</p><p>Verifica que images/page1.png existe</p></div>';
+            };
+
+            img.src = comicData[0].image;
+        }
+
+        function drawPanels(scale) {
+            overlays.innerHTML = '';
+
+            if (!showPanels || !currentImage) return;
+
+            comicData[0].panels.forEach((panel, index) => {
+                const x = (panel.crop.x / 100) * canvas.width;
+                const y = (panel.crop.y / 100) * canvas.height;
+                const width = (panel.crop.width / 100) * canvas.width;
+                const height = (panel.crop.height / 100) * canvas.height;
+
+                // Create overlay div
+                const overlay = document.createElement('div');
+                overlay.className = `panel-overlay color-panel-${index + 1}`;
+                overlay.style.left = x + 'px';
+                overlay.style.top = y + 'px';
+                overlay.style.width = width + 'px';
+                overlay.style.height = height + 'px';
+                overlay.style.borderColor = colors[index % colors.length];
+
+                // Create label
+                const label = document.createElement('div');
+                label.className = 'panel-label';
+                label.textContent = panel.id;
+                label.style.top = '5px';
+                label.style.left = '5px';
+                label.style.background = colors[index % colors.length];
+                label.style.color = '#000';
+
+                overlay.appendChild(label);
+                overlays.appendChild(overlay);
+            });
+        }
+
+        function showInfo(img, scale) {
+            let html = '';
+
+            html += `<div class="panel-info" style="border-left-color: #00f2ff;">`;
+            html += `<h4>📐 Imagen Original</h4>`;
+            html += `<p>Tamaño: ${img.width} × ${img.height} px</p>`;
+            html += `<p>Escala en canvas: ${(scale * 100).toFixed(1)}%</p>`;
+            html += `</div>`;
+
+            // Check for overlaps
+            const panels = comicData[0].panels;
+            let hasOverlap = false;
+            let hasGaps = false;
+
+            for (let i = 0; i < panels.length - 1; i++) {
+                const panel1End = panels[i].crop.y + panels[i].crop.height;
+                const panel2Start = panels[i + 1].crop.y;
+
+                if (panel1End > panel2Start) {
+                    hasOverlap = true;
+                } else if (panel1End < panel2Start) {
+                    hasGaps = true;
+                }
+            }
+
+            if (hasOverlap) {
+                html += `<div class="warning error">`;
+                html += `<h4>⚠️ Advertencia: Paneles Superpuestos</h4>`;
+                html += `<p>Algunos paneles se superponen. Esto puede causar que se muestren partes incorrectas.</p>`;
+                html += `</div>`;
+            }
+
+            if (hasGaps) {
+                html += `<div class="warning">`;
+                html += `<h4>ℹ️ Info: Hay espacios entre paneles</h4>`;
+                html += `<p>Hay espacios entre algunos paneles. Esto es normal si tu cómic tiene espacios en blanco.</p>`;
+                html += `</div>`;
+            }
+
+            panels.forEach((panel, index) => {
+                const x = (panel.crop.x / 100) * img.width;
+                const y = (panel.crop.y / 100) * img.height;
+                const width = (panel.crop.width / 100) * img.width;
+                const height = (panel.crop.height / 100) * img.height;
+
+                html += `<div class="panel-info" style="border-left-color: ${colors[index % colors.length]};">`;
+                html += `<h4>${panel.id}</h4>`;
+                html += `<p><strong>Porcentajes:</strong></p>`;
+                html += `<pre>x: ${panel.crop.x}%\ny: ${panel.crop.y}%\nwidth: ${panel.crop.width}%\nheight: ${panel.crop.height}%</pre>`;
+                html += `<p><strong>Píxeles (en imagen original):</strong></p>`;
+                html += `<pre>x: ${Math.round(x)} px\ny: ${Math.round(y)} px\nwidth: ${Math.round(width)} px\nheight: ${Math.round(height)} px</pre>`;
+                html += `<p><strong>Rango Y:</strong> ${panel.crop.y.toFixed(1)}% - ${(panel.crop.y + panel.crop.height).toFixed(1)}%</p>`;
+
+                // Check if this panel overlaps with next
+                if (index < panels.length - 1) {
+                    const thisEnd = panel.crop.y + panel.crop.height;
+                    const nextStart = panels[index + 1].crop.y;
+                    if (thisEnd > nextStart) {
+                        html += `<p style="color: #ff4444;">⚠️ Se superpone con ${panels[index + 1].id}</p>`;
+                    } else if (thisEnd < nextStart) {
+                        html += `<p style="color: #ffc107;">Gap de ${(nextStart - thisEnd).toFixed(1)}% hasta siguiente panel</p>`;
+                    }
+                }
+
+                html += `</div>`;
+            });
+
+            info.innerHTML = html;
+        }
+
+        function togglePanels() {
+            showPanels = !showPanels;
+            if (currentImage) {
+                const scale = canvas.width / currentImage.width;
+                drawPanels(scale);
+            }
+        }
+
+        // Auto load on start
+        window.addEventListener('load', () => {
+            loadImage();
+        });
+    </script>
+</body>
+
+</html>
