@@ -115,6 +115,7 @@
             margin: 0 0 1rem 0;
             background: linear-gradient(135deg, #00f2ff, #7000ff);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -194,7 +195,9 @@
             head: null, // Ejemplo: 'images/snake-head.png'
             body: null, // Ejemplo: 'images/snake-body.png'
             food: null, // Ejemplo: 'images/food.png'
-            background: null // Ejemplo: 'images/bg.png'
+            background: null, // Ejemplo: 'images/bg.png'
+            hunter: null,
+            portal: null
         };
 
         // Cargar imágenes si existen
@@ -226,9 +229,11 @@
         let lastRenderTime = 0;
         let gameRunning = false;
 
-        // Effects
+        // Effects & Mechanics
         let particles = [];
         let screenShake = 0;
+        let hunter = { x: -1, y: -1, active: false, moveTimer: 0 };
+        let portals = [];
 
         class Particle {
             constructor(x, y, color) {
@@ -272,12 +277,23 @@
             level = 1;
             xp = 0;
             xpToNextLevel = 100;
+            hunter = { x: -1, y: -1, active: false, moveTimer: 0 };
+            portals = [];
+            spawnPortals();
             updateHUD();
             placeFood();
             lastRenderTime = 0;
             gameRunning = true;
             particles = [];
             requestAnimationFrame(main);
+        }
+
+        function spawnPortals() {
+            // Create a pair of portals
+            let p1 = { x: Math.floor(Math.random() * (tileCount - 4)) + 2, y: Math.floor(Math.random() * (tileCount - 4)) + 2, color: '#ff9900' };
+            let p2 = { x: Math.floor(Math.random() * (tileCount - 4)) + 2, y: Math.floor(Math.random() * (tileCount - 4)) + 2, color: '#0099ff' };
+            // Ensure they don't overlap snake or food (simple check)
+            portals = [p1, p2];
         }
 
         function updateHUD() {
@@ -330,13 +346,60 @@
 
             const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
 
+            // Portal Logic
+            let teleported = false;
+            for (let i = 0; i < portals.length; i++) {
+                if (head.x === portals[i].x && head.y === portals[i].y) {
+                    const dest = portals[(i + 1) % portals.length];
+                    head.x = dest.x;
+                    head.y = dest.y;
+                    createExplosion(head.x * gridSize, head.y * gridSize, portals[i].color);
+                    teleported = true;
+                    break;
+                }
+            }
+
             // Wall collision
-            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || checkSelfCollision(head)) {
+            if (!teleported && (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount)) {
+                gameOver();
+                return;
+            }
+            // Self collision
+            if (checkSelfCollision(head)) {
+                gameOver();
+                return;
+            }
+
+            // Hunter Collision
+            if (hunter.active && head.x === hunter.x && head.y === hunter.y) {
                 gameOver();
                 return;
             }
 
             snake.unshift(head);
+
+            // Hunter Logic (Moves every 2 frames approx)
+            if (level >= 3) { // Hunter appears at level 3
+                if (!hunter.active) {
+                    hunter.active = true;
+                    hunter.x = 0; hunter.y = 0; // Spawn at corner
+                }
+                hunter.moveTimer++;
+                if (hunter.moveTimer > 2) {
+                    hunter.moveTimer = 0;
+                    // Move towards snake head
+                    if (hunter.x < snake[0].x) hunter.x++;
+                    else if (hunter.x > snake[0].x) hunter.x--;
+
+                    if (hunter.y < snake[0].y) hunter.y++;
+                    else if (hunter.y > snake[0].y) hunter.y--;
+                }
+                // Check collision again after hunter move
+                if (head.x === hunter.x && head.y === hunter.y) {
+                    gameOver();
+                    return;
+                }
+            }
 
             // Eat food
             if (head.x === food.x && head.y === food.y) {
@@ -352,6 +415,7 @@
                     xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
                     createExplosion(canvas.width / 2, canvas.height / 2, '#ff00aa'); // Level up explosion
                     screenShake = 10;
+                    spawnPortals(); // Move portals on level up
                 } else {
                     screenShake = 5;
                 }
@@ -395,6 +459,17 @@
                 }
             }
 
+            // Portals
+            portals.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc((p.x * gridSize) + gridSize / 2, (p.y * gridSize) + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
             // Draw Particles
             particles.forEach(p => p.draw(ctx));
 
@@ -416,6 +491,15 @@
                     ctx.shadowBlur = 0;
                 }
             });
+
+            // Hunter
+            if (hunter.active) {
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff0000';
+                ctx.fillRect(hunter.x * gridSize, hunter.y * gridSize, gridSize, gridSize);
+                ctx.shadowBlur = 0;
+            }
 
             // Food
             const fx = food.x * gridSize;

@@ -40,6 +40,14 @@
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
             osc.start(now);
             osc.stop(now + 0.1);
+        } else if (type === 'shotgun') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
         } else if (type === 'explosion') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(100, now);
@@ -55,6 +63,14 @@
             gain.gain.linearRampToValueAtTime(0, now + 0.1);
             osc.start(now);
             osc.stop(now + 0.1);
+        } else if (type === 'dash') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
         }
     };
 
@@ -68,7 +84,6 @@
 
     // --- UI Injection ---
     const scoreEl = document.getElementById('score');
-    // Add modern styling to HUD
     const hud = document.querySelector('.hud');
     if (hud) {
         hud.style.fontFamily = '"Segoe UI", sans-serif';
@@ -169,6 +184,8 @@
             this.rotSpeed = 0.1;
             this.thrust = 0.15;
             this.cooldown = 0;
+            this.weapon = 'blaster'; // blaster, shotgun
+            this.dashCooldown = 0;
         }
 
         update() {
@@ -192,6 +209,28 @@
                 if (Math.random() < 0.2) playSound('thrust');
             }
 
+            // Dash
+            if (this.dashCooldown > 0) this.dashCooldown--;
+            if ((keys['ShiftLeft'] || keys['ShiftRight']) && this.dashCooldown <= 0) {
+                const dashForce = { x: Math.cos(this.angle - Math.PI / 2) * 10, y: Math.sin(this.angle - Math.PI / 2) * 10 };
+                this.vel = vec.add(this.vel, dashForce);
+                this.dashCooldown = 60; // 1 second
+                playSound('dash');
+                state.shake += 5;
+                // Dash particles
+                for (let i = 0; i < 10; i++) {
+                    particles.push(new Particle(this.pos.x, this.pos.y, vec.mult(dashForce, -0.5), '#ffffff', 1, 20));
+                }
+            }
+
+            // Weapon Switch
+            if (keys['KeyQ'] && !this.switchPressed) {
+                this.weapon = this.weapon === 'blaster' ? 'shotgun' : 'blaster';
+                showMessage(`WEAPON: ${this.weapon.toUpperCase()}`);
+                this.switchPressed = true;
+            }
+            if (!keys['KeyQ']) this.switchPressed = false;
+
             this.vel = vec.mult(this.vel, this.friction);
             super.update();
 
@@ -199,17 +238,32 @@
             if (this.cooldown > 0) this.cooldown--;
             if (keys['Space'] && this.cooldown <= 0) {
                 this.shoot();
-                this.cooldown = 10;
             }
         }
 
         shoot() {
             const muzzle = vec.rot({ x: 0, y: -20 }, this.angle);
             const pos = vec.add(this.pos, muzzle);
-            const vel = vec.rot({ x: 0, y: -10 }, this.angle);
-            bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel)));
-            playSound('shoot');
-            state.shake += 2;
+
+            if (this.weapon === 'blaster') {
+                const vel = vec.rot({ x: 0, y: -10 }, this.angle);
+                bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel)));
+                playSound('shoot');
+                this.cooldown = 10;
+                state.shake += 2;
+            } else if (this.weapon === 'shotgun') {
+                for (let i = -1; i <= 1; i++) {
+                    const spread = i * 0.15;
+                    const vel = vec.rot({ x: 0, y: -10 }, this.angle + spread);
+                    bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel), 1.5, '#ff00aa', 40));
+                }
+                playSound('shotgun');
+                this.cooldown = 30;
+                state.shake += 5;
+                // Recoil
+                const recoil = { x: Math.cos(this.angle + Math.PI / 2) * 2, y: Math.sin(this.angle + Math.PI / 2) * 2 };
+                this.vel = vec.add(this.vel, recoil);
+            }
         }
 
         drawShape(ctx) {
@@ -219,16 +273,22 @@
             ctx.lineTo(0, 10);
             ctx.lineTo(-12, 15);
             ctx.closePath();
+
+            // Draw weapon indicator
+            if (this.weapon === 'shotgun') {
+                ctx.fillStyle = '#ff00aa';
+                ctx.fill();
+            }
         }
     }
 
     class Bullet extends Entity {
-        constructor(x, y, vel) {
+        constructor(x, y, vel, size = 2, color = '#ffea00', life = 60) {
             super(x, y);
             this.vel = vel;
-            this.radius = 2;
-            this.color = '#ffea00';
-            this.life = 60;
+            this.radius = size;
+            this.color = color;
+            this.life = life;
         }
 
         update() {
@@ -242,7 +302,7 @@
 
         drawShape(ctx) {
             ctx.beginPath();
-            ctx.arc(0, 0, 2, 0, Math.PI * 2);
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
             ctx.fillStyle = this.color;
             ctx.fill();
         }
