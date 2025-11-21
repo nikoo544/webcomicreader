@@ -4,115 +4,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AG Reader - Panel Focus Mode</title>
-    <meta name="description" content="Immersive webcomic reader with panel-by-panel navigation and audio support">
+    <title>AG Reader - Webcomic Reader System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0b10 0%, #1a1b26 100%);
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
 
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
 
-    <link rel="stylesheet" href="style.css">
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #00f2ff, #7000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 40px rgba(112, 0, 255, 0.5));
+            }
+        }
+
+        .subtitle {
+            color: #8b949e;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(112, 0, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 242, 255, 0.3);
+            border-color: rgba(0, 242, 255, 0.5);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .card h2 {
+            color: #00f2ff;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .card p {
+            color: #8b949e;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .card-badge {
+            display: inline-block;
+            background: rgba(0, 242, 255, 0.2);
+            color: #00f2ff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card.primary {
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(112, 0, 255, 0.1));
+            border: 2px solid rgba(0, 242, 255, 0.3);
+        }
+
+        .features {
+            background: rgba(22, 27, 34, 0.8);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .features h3 {
+            color: #7000ff;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            color: #00f2ff;
+            flex-shrink: 0;
+        }
+
+        .feature-text h4 {
+            color: #e6edf3;
+            margin-bottom: 0.25rem;
+        }
+
+        .feature-text p {
+            color: #8b949e;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <div class="brand">AG READER</div>
-        <div class="header-controls">
-            <div class="mode-controls">
-                <button class="icon-btn" id="singleModeBtn" title="Single Page">
-                    <i class="fa-regular fa-file"></i>
-                </button>
-                <button class="icon-btn" id="doubleModeBtn" title="Double Page">
-                    <i class="fa-solid fa-book-open"></i>
-                </button>
-                <button class="icon-btn" id="cascadeModeBtn" title="Cascade / Webtoon">
-                    <i class="fa-solid fa-scroll"></i>
-                </button>
-                <button class="icon-btn active" id="panelModeBtn" title="Panel Focus Mode">
-                    <i class="fa-solid fa-grip-vertical"></i>
-                </button>
-            </div>
-            <div class="divider"></div>
-            <button class="icon-btn" id="audioToggle" title="Toggle Audio">
-                <i class="fa-solid fa-volume-high"></i>
-            </button>
-            <button class="icon-btn" id="themeToggle" title="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
-        </div>
-    </header>
+    <div class="container">
+        <p>Herramienta visual para definir paneles. Dibuja rectángulos sobre tu imagen y genera el código
+            automáticamente.</p>
+        <span class="card-badge">HERRAMIENTA</span>
+    </div>
+    </a>
 
-    <!-- Main Reader Area -->
-    <main id="mainReader">
-        <div class="loader" id="loader"></div>
-        <div class="comic-container" id="comicContainer">
-            <!-- Content will be dynamically loaded here -->
+    <a href="GUIDE.html" class="card">
+        <div class="card-content">
+            <span class="card-icon">📚</span>
+            <h2>Guía de Uso</h2>
+            <p>Documentación completa con instrucciones, controles, configuración y ejemplos de código.</p>
+            <span class="card-badge">DOCUMENTACIÓN</span>
         </div>
+    </a>
+    </div>
 
-        <!-- Panel Focus Overlay -->
-        <div class="panel-focus-overlay" id="panelOverlay">
-            <div class="panel-focus-container">
-                <div class="panel-wrapper" id="panelWrapper">
-                    <!-- Focused panel will appear here -->
-                </div>
-                <div class="panel-audio-indicator" id="audioIndicator">
-                    <i class="fa-solid fa-volume-high"></i>
-                    <span>Audio activo</span>
+    <div class="features">
+        <h3>✨ Características Principales</h3>
+        <div class="features-grid">
+            <div class="feature-item">
+                <span class="feature-icon">🎯</span>
+                <div class="feature-text">
+                    <h4>Panel Focus Mode</h4>
+                    <p>Lectura panel por panel con enfoque inmersivo</p>
                 </div>
             </div>
-        </div>
-    </main>
 
-    <!-- Navigation Controls -->
-    <div class="reader-controls" id="readerControls">
-        <button class="nav-btn" id="prevBtn" title="Previous">
-            <i class="fa-solid fa-chevron-left"></i>
-        </button>
+            <div class="feature-item">
+                <span class="feature-icon">🎵</span>
+                <div class="feature-text">
+                    <h4>Audio por Viñeta</h4>
+                    <p>Cada panel puede tener su propio audio</p>
+                </div>
+            </div>
 
-        <div class="page-indicator">
-            <span id="currentPage">1</span> / <span id="totalPages">0</span>
-        </div>
+            <div class="feature-item">
+                <span class="feature-icon">📱</span>
+                <div class="feature-text">
+                    <h4>Touch Gestures</h4>
+                    <p>Soporte completo para dispositivos móviles</p>
+                </div>
+            </div>
 
-        <button class="nav-btn" id="nextBtn" title="Next">
-            <i class="fa-solid fa-chevron-right"></i>
-        </button>
+            <div class="feature-item">
+                <span class="feature-icon">⌨️</span>
+                <div class="feature-text">
+                    <h4>Atajos de Teclado</h4>
+                    <p>Navegación rápida con teclado</p>
+                </div>
+            </div>
 
-        <div class="divider"></div>
+            <div class="feature-item">
+                <span class="feature-icon">📖</span>
+                <div class="feature-text">
+                    <h4>4 Modos de Lectura</h4>
+                    <p>Single, Double, Cascade y Panel Focus</p>
+                </div>
+            </div>
 
-        <button class="icon-btn" id="zoomIn" title="Zoom In">
-            <i class="fa-solid fa-magnifying-glass-plus"></i>
-        </button>
-
-        <button class="icon-btn" id="zoomOut" title="Zoom Out">
-            <i class="fa-solid fa-magnifying-glass-minus"></i>
-        </button>
-
-        <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">
-            <i class="fa-solid fa-expand"></i>
-        </button>
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="progress-container">
-        <div class="progress-bar" id="progressBar"></div>
-    </div>
-
-    <!-- Panel Navigation Hint -->
-    <div class="navigation-hint" id="navHint">
-        <div class="hint-content">
-            <i class="fa-solid fa-hand-pointer"></i>
-            <p>Usa las flechas o desliza para navegar entre paneles</p>
+            <div class="feature-item">
+                <span class="feature-icon">🎨</span>
+                <div class="feature-text">
+                    <h4>Diseño Premium</h4>
+                    <p>Interfaz moderna con glassmorphism</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="features">
+        <h3>🚀 Inicio Rápido</h3>
+        <div style="color: #8b949e; line-height: 1.8;">
+            <ol style="margin-left: 2rem;">
+                <li>Haz clic en <strong style="color: #00f2ff;">"Abrir Reader"</strong> para comenzar a leer</li>
+                <li>Usa <strong style="color: #00f2ff;">"Panel Definer"</strong> para configurar tus propios paneles
+                </li>
+                <li>Consulta la <strong style="color: #00f2ff;">"Guía de Uso"</strong> para instrucciones detalladas
+                </li>
+                <li>Agrega tus imágenes en la carpeta <code
+                        style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 4px;">images/</code>
+                </li>
+                <li>Agrega archivos de audio en <code
+                        style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 4px;">audio/</code>
+                </li>
+                <li>Edita <code
+                        style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 4px;">script.js</code>
+                    con la configuración generada</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Desarrollado con <span style="color: #00f2ff;">Antigravity AI</span> ✨</p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem;">Sistema de lectura de webcomics profesional</p>
+    </div>
+    </div>
 </body>
 
 </html>
