@@ -482,8 +482,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (readingMode === 'panel') {
             navigatePanel(direction);
         } else if (readingMode === 'cascade') {
-            // Scroll handled natively
-            return;
+            // Smooth scroll by viewport height
+            const scrollAmount = window.innerHeight * 0.8; // 80% of viewport height
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+            if (direction === 'next') {
+                window.scrollTo({
+                    top: currentScroll + scrollAmount,
+                    behavior: 'smooth'
+                });
+            } else if (direction === 'prev') {
+                window.scrollTo({
+                    top: currentScroll - scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
         } else {
             navigatePage(direction);
         }
