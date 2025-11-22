@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alien Abductor - Cow Snatcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --secondary: #bd00ff;
+            --accent: #ff0055;
+            --bg: #050508;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+
+        #gameCanvas {
+            display: block;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--primary);
+            color: white;
+        }
+
+        .hud-item {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #message-area {
+            position: absolute;
+            top: 20%;
+            width: 100%;
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--primary);
+            opacity: 0;
+            transition: opacity 0.5s;
+            transform: translateY(-20px);
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 8, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
+
+        .title {
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 30px var(--primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .controls-info {
+            color: #ccc;
+            margin-bottom: 2rem;
+            text-align: center;
+            line-height: 1.6;
+            font-size: 1.2rem;
+        }
+
+        .key {
+            display: inline-block;
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            color: white;
+            font-family: monospace;
+        }
+
+        .btn-start {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            border: none;
+            background: var(--primary);
+            color: #000;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .back-btn:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui-layer">
+        <div class="hud">
+            <div class="hud-item">
+                <i class="fas fa-cow"></i> <span id="cowsDisplay">0/5</span>
+            </div>
+            <div class="hud-item">
+                <i class="fas fa-clock"></i> <span id="timeDisplay">00:00</span>
+            </div>
+        </div>
+        <div id="message-area"></div>
+    </div>
+
+    <div id="start-screen">
+        <div class="title">ALIEN ABDUCTOR</div>
+        <div class="controls-info">
+            <p><span class="key">W</span> / <span class="key">↑</span> Thrust</p>
+            <p><span class="key">A</span> / <span class="key">D</span> or <span class="key">←</span> / <span
+                    class="key">→</span> Rotate</p>
+            <p><span class="key">SPACE</span> Tractor Beam</p>
+        </div>
+        <button class="btn-start" onclick="startGame()">START MISSION</button>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Arcade</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Audio System
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(type) {
+            const now = audioCtx.currentTime;
+
+            if (type === 'thrust') {
+                playTone(100, 'sawtooth', 0.1, 0.05);
+            } else if (type === 'beam') {
+                playTone(400 + Math.random() * 100, 'sine', 0.1, 0.05);
+            } else if (type === 'moo') {
+                // Simple Moo synthesis
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(now + 0.5);
+            } else if (type === 'success') {
+                playTone(880, 'sine', 0.2, 0.1);
+                setTimeout(() => playTone(1100, 'sine', 0.4, 0.1), 100);
+            }
+        }
+
+        // Game Constants
+        const GRAVITY = 0.15;
+        const THRUST = 0.4;
+        const ROTATION_SPEED = 0.1;
+        const BEAM_FORCE = 0.3;
+        const BEAM_RANGE = 250;
+
+        // Game State
+        let gameState = 'START';
+        let startTime = 0;
+        let cowsCollected = 0;
+        let totalCows = 5;
+        let level = 1;
+
+        // Camera
+        let camera = {
+            x: 0, y: 0
+        };
+
+        // Entities
+        let ship = {
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            angle: 0,
+            radius: 25,
+            fuel: 100,
+            beamActive: false,
+            holdingCow: null
+        };
+
+        let cows = [];
+        let particles = [];
+        let terrain = [];
+
+        let portal = {
+            x: 0, y: 0, radius: 60
+        };
+
+        // Input
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Procedural Generation
+        function generateLevel() {
+            // Reset Ship
+            ship.x = 200;
+            ship.y = 200;
+            ship.vx = 0;
+            ship.vy = 0;
+            ship.angle = 0;
+            ship.holdingCow = null;
+
+            // Generate Terrain
+            terrain = [];
+            const points = 100;
+            const segmentWidth = 100;
+            let currentY = height - 100;
+
+            for (let i = 0; i < points; i++) {
+                terrain.push({
+                    x: i * segmentWidth, y: currentY
+                });
+                // Random variation but keep it somewhat smooth
+                currentY += (Math.random() - 0.5) * 150;
+                // Clamp
+                if (currentY < height / 2) currentY = height / 2;
+                if (currentY > height + 200) currentY = height + 200;
+
+                // Flat spots for cows
+                if (Math.random() < 0.2) {
+                    const flatY = currentY;
+                    i++;
+
+                    terrain.push({
+                        x: i * segmentWidth, y: flatY
+                    });
+                    i++;
+
+                    terrain.push({
+                        x: i * segmentWidth, y: flatY
+                    });
+                }
+            }
+
+            // Spawn Cows
+            cows = [];
+            totalCows = 3 + level;
+
+            for (let i = 0; i < totalCows; i++) {
+                // Pick a random spot on terrain (avoiding start)
+                const index = Math.floor(Math.random() * (terrain.length - 10)) + 5;
+                const t = terrain[index];
+
+                cows.push({
+                    x: t.x,
+                    y: t.y - 20,
+                    vx: 0, vy: 0,
+                    radius: 15,
+                    state: 'IDLE', // IDLE, BEAMED, CARRIED, DELIVERED
+                    color: Math.random() > 0.5 ? '#fff' : '#dcb' // White or brown cows
+                });
+            }
+
+            cowsCollected = 0;
+            updateUI();
+
+            // Portal Location (Far right)
+            portal.x = terrain[terrain.length - 5].x;
+            portal.y = terrain[terrain.length - 5].y - 200;
+        }
+
+        // Juicy Effects
+        let shake = 0;
+
+        function addShake(amount) {
+            shake = amount;
+        }
+
+        function rand(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Screen Shake Decay
+            if (shake > 0) shake *= 0.9;
+            if (shake < 0.5) shake = 0;
+
+            // Ship Physics
+            ship.vy += GRAVITY;
+
+            // Thrust
+            if (keys['ArrowUp'] || keys['KeyW']) {
+                ship.vy -= THRUST;
+
+                // Particles
+                for (let i = 0; i < 2; i++) {
+                    particles.push({
+                        x: ship.x + (Math.random() - 0.5) * 10,
+                        y: ship.y + 20,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: Math.random() * 5,
+                        life: rand(10, 30),
+                        color: Math.random() > 0.5 ? '#00ff88' : '#fff'
+                    });
+                }
+
+                if (Math.random() < 0.2) playSound('thrust');
+                addShake(2);
+            }
+
+            // Movement
+            if (keys['ArrowLeft'] || keys['KeyA']) {
+                ship.vx -= 0.2;
+                ship.angle = -0.2;
+            } else if (keys['ArrowRight'] || keys['KeyD']) {
+                ship.vx += 0.2;
+                ship.angle = 0.2;
+            } else {
+                ship.angle *= 0.9;
+            }
+
+            // Friction
+            ship.vx *= 0.98;
+            ship.vy *= 0.98;
+
+            // Apply Velocity
+            ship.x += ship.vx;
+            ship.y += ship.vy;
+
+            // Tractor Beam
+            ship.beamActive = keys['Space'];
+
+            if (ship.beamActive) {
+                if (Math.random() < 0.1) playSound('beam');
+                addShake(1);
+
+                // Visual Particles for beam
+                for (let i = 0; i < 3; i++) {
+                    particles.push({
+                        x: ship.x + (Math.random() - 0.5) * 30,
+                        y: ship.y + 20,
+                        vx: 0,
+                        vy: 5 + Math.random() * 8,
+                        life: 15,
+                        color: `rgba(0, 255, 136, ${Math.random()})`
+                    });
+                }
+            }
+
+            // Cow Logic
+            cows.forEach(cow => {
+                if (cow.state === 'DELIVERED') return;
+
+                const dx = ship.x - cow.x;
+                const dy = ship.y - cow.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (cow.state === 'CARRIED') {
+                    // Dangle below ship
+                    const targetX = ship.x;
+                    const targetY = ship.y + 50;
+                    cow.vx += (targetX - cow.x) * 0.2;
+                    cow.vy += (targetY - cow.y) * 0.2;
+                    cow.vx *= 0.8;
+                    cow.vy *= 0.8;
+
+                    if (!ship.beamActive) {
+                        cow.state = 'IDLE';
+                        ship.holdingCow = null;
+                        cow.vx = ship.vx;
+                        cow.vy = ship.vy;
+                        playSound('moo');
+                    }
+                } else if (cow.state === 'IDLE' || cow.state === 'BEAMED') {
+                    cow.vy += GRAVITY;
+
+                    // Terrain Collision
+                    let groundY = height + 1000;
+
+                    for (let i = 0; i < terrain.length - 1; i++) {
+                        if (cow.x >= terrain[i].x && cow.x <= terrain[i + 1].x) {
+                            const t = (cow.x - terrain[i].x) / (terrain[i + 1].x - terrain[i].x);
+                            groundY = terrain[i].y + t * (terrain[i + 1].y - terrain[i].y);
+                            break;
+                        }
+                    }
+
+                    if (cow.y + cow.radius > groundY) {
+                        cow.y = groundY - cow.radius;
+                        cow.vy = -cow.vy * 0.3; // Bounce
+                        cow.vx *= 0.8;
+                    }
+
+                    // Beam Interaction
+                    if (ship.beamActive && !ship.holdingCow && Math.abs(dx) < 60 && dy < 0 && dist < BEAM_RANGE) {
+                        cow.state = 'BEAMED';
+                        cow.vy -= BEAM_FORCE * 1.5;
+                        cow.vx += dx * 0.1;
+
+                        // Pick up
+                        if (dist < 50) {
+                            cow.state = 'CARRIED';
+                            ship.holdingCow = cow;
+                            playSound('moo');
+                            addShake(5);
+
+                            // Burst particles
+                            for (let i = 0; i < 10; i++) {
+                                particles.push({
+                                    x: cow.x, y: cow.y,
+                                    vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
+                                    life: 30, color: '#fff'
+                                });
+                            }
+                        }
+                    } else {
+                        cow.state = 'IDLE';
+                    }
+                }
+
+                cow.x += cow.vx;
+                cow.y += cow.vy;
+
+                // Portal Interaction
+                const pdx = portal.x - cow.x;
+                const pdy = portal.y - cow.y;
+
+                if (Math.sqrt(pdx * pdx + pdy * pdy) < portal.radius && cow.state !== 'DELIVERED') {
+                    cow.state = 'DELIVERED';
+                    if (ship.holdingCow === cow) ship.holdingCow = null;
+                    cowsCollected++;
+                    playSound('success');
+                    addShake(10);
+                    showMessage("COW SAVED!");
+                    updateUI();
+
+                    // Portal Flash
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: portal.x, y: portal.y,
+                            vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10,
+                            life: 40, color: '#00ff88'
+                        });
+                    }
+
+                    if (cowsCollected >= totalCows) {
+                        setTimeout(() => {
+                            level++;
+                            showMessage("LEVEL COMPLETE!");
+                            setTimeout(generateLevel, 2000);
+                        }, 1000);
+                    }
+                }
+            });
+
+            // Camera Follow
+            camera.x += (ship.x - width / 2 - camera.x) * 0.1;
+            camera.y += (ship.y - height / 2 - camera.y) * 0.1;
+            if (camera.y > 500) camera.y = 500;
+
+            // Particles
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+        }
+
+        function draw() {
+            // Sky
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, width, height);
+
+            // Apply Shake
+            const shakeX = (Math.random() - 0.5) * shake;
+            const shakeY = (Math.random() - 0.5) * shake;
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // Stars (Parallax)
+            ctx.save();
+            ctx.translate(-camera.x * 0.1, -camera.y * 0.1);
+            ctx.fillStyle = 'white';
+
+            for (let i = 0; i < 100; i++) {
+                const sx = (i * 137) % 2000;
+                const sy = (i * 241) % 1000;
+                ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+                ctx.fillRect(sx, sy, 2, 2);
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+
+            // Terrain
+            ctx.beginPath();
+            ctx.moveTo(terrain[0].x, terrain[0].y);
+
+            for (let i = 1; i < terrain.length; i++) {
+                ctx.lineTo(terrain[i].x, terrain[i].y);
+            }
+
+            ctx.lineTo(terrain[terrain.length - 1].x, height + 1000);
+            ctx.lineTo(terrain[0].x, height + 1000);
+            ctx.fillStyle = '#1a0525';
+            ctx.fill();
+            ctx.strokeStyle = '#bd00ff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Portal
+            ctx.beginPath();
+            ctx.arc(portal.x, portal.y, portal.radius + Math.sin(Date.now() * 0.01) * 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = '#00ff88';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.save();
+            ctx.translate(portal.x, portal.y);
+            ctx.rotate(Date.now() * 0.005);
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(-20, -20, 40, 40);
+            ctx.restore();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText("WARP ZONE", portal.x, portal.y - 80);
+
+            // Cows
+            cows.forEach(cow => {
+                if (cow.state === 'DELIVERED') return;
+
+                ctx.save();
+                ctx.translate(cow.x, cow.y);
+                if (cow.state === 'CARRIED') ctx.rotate(Math.sin(Date.now() * 0.02) * 0.5);
+
+                ctx.fillStyle = cow.color;
+                ctx.fillRect(-15, -10, 30, 20);
+                ctx.fillStyle = cow.color;
+                ctx.fillRect(10, -15, 15, 15);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(-12, 10, 5, 8);
+                ctx.fillRect(7, 10, 5, 8);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(-5, -5, 8, 8);
+
+                // Eyes
+                ctx.fillStyle = 'white';
+                ctx.fillRect(15, -12, 4, 4);
+                ctx.fillStyle = 'black';
+                ctx.fillRect(17, -11, 2, 2);
+
+                ctx.restore();
+            });
+
+            // Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life / 30;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 4, 4);
+                ctx.globalAlpha = 1;
+            });
+
+            // Ship
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(ship.angle);
+
+            // Beam
+            if (ship.beamActive) {
+                ctx.beginPath();
+                ctx.moveTo(-10, 10);
+                ctx.lineTo(-40, BEAM_RANGE);
+                ctx.lineTo(40, BEAM_RANGE);
+                ctx.lineTo(10, 10);
+                const grad = ctx.createLinearGradient(0, 0, 0, BEAM_RANGE);
+                grad.addColorStop(0, 'rgba(0, 255, 136, 0.5)');
+                grad.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+
+            // Dome
+            ctx.beginPath();
+            ctx.arc(0, -5, 15, Math.PI, 0);
+            ctx.fillStyle = 'rgba(0, 242, 255, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Saucer
+            ctx.beginPath();
+            ctx.ellipse(0, 5, 30, 10, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Lights
+            const time = Date.now() * 0.01;
+
+            for (let i = 0; i < 5; i++) {
+                const x = Math.cos(time + i) * 20;
+                const y = Math.sin(time + i) * 5 + 5;
+                ctx.fillStyle = i % 2 === 0 ? '#ff0055' : '#ffff00';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
+            ctx.restore(); // End Shake
+            ctx.restore(); // End Camera
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (gameState === 'PLAYING') requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameState = 'PLAYING';
+            level = 1;
+            generateLevel();
+
+            setInterval(() => {
+                if (gameState === 'PLAYING') {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const secs = (elapsed % 60).toString().padStart(2, '0');
+
+                    document.getElementById('timeDisplay').innerText = `${mins}:${secs}`;
+                }
+            }, 1000);
+            startTime = Date.now();
+            gameLoop();
+        }
+
+        function updateUI() {
+            document.getElementById('cowsDisplay').innerText = `${cowsCollected}/${totalCows}`;
+        }
+
+        function showMessage(text) {
+            const el = document.getElementById('message-area');
+            el.innerText = text;
+            el.style.opacity = 1;
+            el.style.transform = 'translateY(0)';
+
+            setTimeout(() => {
+                el.style.opacity = 0;
+                el.style.transform = 'translateY(-20px)';
+            }, 2000);
+        }
+
+        // Initial Draw
+        resize();
+    </script>
+</body>
+
+</html>
