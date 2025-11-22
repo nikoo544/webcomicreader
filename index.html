@@ -1,24 +1,23 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Lee webcomics interactivos con audio inmersivo y juega en nuestra Arcade Zone.">
-    <title>Webcomic Reader & Arcade - Experiencia Premium</title>
+    <meta name="description"
+        content="Barquito Games - Psychoreactive Entertainment Systems. Play our retro-futuristic arcade collection.">
+    <title>BARQUITO GAMES | System Ready</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #050508;
-            --bg-card: rgba(22, 27, 34, 0.7);
-            --primary: #00f2ff;
-            --secondary: #7000ff;
-            --accent: #ff0055;
-            --text: #ffffff;
-            --text-muted: #8b949e;
+            --neon-green: #39ff14;
+            --neon-purple: #bc13fe;
+            --neon-blue: #04d9ff;
+            --crt-bg: #0a0a0a;
+            --scanline-color: rgba(0, 0, 0, 0.5);
         }
 
         * {
@@ -28,527 +27,615 @@
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text);
+            background-color: var(--crt-bg);
+            color: var(--neon-green);
+            font-family: 'VT323', monospace;
             overflow-x: hidden;
-            background-image: none;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
+        /* CRT Effects */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+            animation: flicker 0.15s infinite;
         }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-dark);
+        .crt-overlay::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: rgba(18, 16, 16, 0.1);
+            opacity: 0;
+            z-index: 2;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 5px;
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 999;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(32, 255, 77, 0.04) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary);
+        @keyframes scanline {
+            0% {
+                bottom: 100%;
+            }
+
+            100% {
+                bottom: -100%;
+            }
         }
 
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
+        @keyframes flicker {
+            0% {
+                opacity: 0.97;
+            }
+
+            5% {
+                opacity: 0.95;
+            }
+
+            10% {
+                opacity: 0.9;
+            }
+
+            15% {
+                opacity: 0.95;
+            }
+
+            20% {
+                opacity: 0.99;
+            }
+
+            25% {
+                opacity: 0.95;
+            }
+
+            30% {
+                opacity: 0.9;
+            }
+
+            35% {
+                opacity: 0.96;
+            }
+
+            40% {
+                opacity: 0.98;
+            }
+
+            45% {
+                opacity: 0.95;
+            }
+
+            50% {
+                opacity: 0.99;
+            }
+
+            55% {
+                opacity: 0.93;
+            }
+
+            60% {
+                opacity: 0.9;
+            }
+
+            65% {
+                opacity: 0.96;
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            75% {
+                opacity: 0.97;
+            }
+
+            80% {
+                opacity: 0.95;
+            }
+
+            85% {
+                opacity: 0.92;
+            }
+
+            90% {
+                opacity: 0.98;
+            }
+
+            95% {
+                opacity: 0.95;
+            }
+
+            100% {
+                opacity: 0.98;
+            }
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            border-bottom: 2px solid var(--neon-green);
+            padding-bottom: 2rem;
+        }
+
+        .brand-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--neon-green);
+            text-shadow: 4px 4px var(--neon-purple);
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+            animation: pulse 2s infinite;
+        }
+
+        .brand-subtitle {
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        @keyframes pulse {
+            0% {
+                text-shadow: 4px 4px var(--neon-purple);
+            }
+
+            50% {
+                text-shadow: -4px -4px var(--neon-purple);
+            }
+
+            100% {
+                text-shadow: 4px 4px var(--neon-purple);
+            }
+        }
+
+        /* Navigation */
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+        }
+
+        .nav-item {
+            color: var(--neon-green);
+            text-decoration: none;
+            padding: 10px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-green);
+            cursor: pointer;
+        }
+
+        /* Grid */
+        .rom-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        /* Cards */
+        .rom-card {
+            border: 2px solid var(--neon-green);
+            background: rgba(0, 20, 0, 0.8);
+            padding: 5px;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .rom-card:hover {
+            transform: scale(1.02);
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 20px var(--neon-purple);
+            z-index: 10;
+        }
+
+        .rom-header {
+            background: var(--neon-green);
+            color: #000;
+            padding: 5px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .rom-card:hover .rom-header {
+            background: var(--neon-purple);
+        }
+
+        .rom-preview {
+            height: 200px;
+            background: #000;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 4rem;
+            border-bottom: 2px solid var(--neon-green);
             position: relative;
             overflow: hidden;
-            padding: 2rem;
         }
 
-        #starfield {
+        .rom-card:hover .rom-preview {
+            border-color: var(--neon-purple);
+        }
+
+        .rom-info {
+            padding: 1rem;
+        }
+
+        .rom-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .rom-meta {
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-load {
+            display: block;
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-load:hover {
+            background: var(--neon-green);
+            color: #000;
+            animation: blink 0.2s infinite;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Glitch Effect */
+        .glitch-wrapper {
+            position: relative;
+        }
+
+        .glitch-wrapper::before,
+        .glitch-wrapper::after {
+            content: attr(data-text);
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+        }
+
+        .glitch-wrapper::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        .glitch-wrapper::after {
+            left: -2px;
+            text-shadow: -1px 0 blue;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% {
+                clip: rect(11px, 9999px, 34px, 0);
+            }
+
+            20% {
+                clip: rect(87px, 9999px, 96px, 0);
+            }
+
+            40% {
+                clip: rect(42px, 9999px, 12px, 0);
+            }
+
+            60% {
+                clip: rect(12px, 9999px, 65px, 0);
+            }
+
+            80% {
+                clip: rect(56px, 9999px, 87px, 0);
+            }
+
+            100% {
+                clip: rect(23px, 9999px, 11px, 0);
+            }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% {
+                clip: rect(65px, 9999px, 99px, 0);
+            }
+
+            20% {
+                clip: rect(12px, 9999px, 34px, 0);
+            }
+
+            40% {
+                clip: rect(87px, 9999px, 12px, 0);
+            }
+
+            60% {
+                clip: rect(43px, 9999px, 65px, 0);
+            }
+
+            80% {
+                clip: rect(12px, 9999px, 87px, 0);
+            }
+
+            100% {
+                clip: rect(56px, 9999px, 34px, 0);
+            }
+        }
+
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            border-top: 2px solid var(--neon-green);
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+
+        .blink-text {
+            animation: blink-slow 1s infinite;
+        }
+
+        @keyframes blink-slow {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Background Grid Animation */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image:
+                linear-gradient(var(--neon-purple) 1px, transparent 1px),
+                linear-gradient(90deg, var(--neon-purple) 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: 0 0;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            opacity: 0.1;
+            animation: grid-move 20s linear infinite;
             z-index: 0;
             pointer-events: none;
         }
 
-        .hero-content {
-            text-align: center;
-            z-index: 1;
-            max-width: 1000px;
-            animation: fadeInUp 1s ease-out;
-        }
+        @keyframes grid-move {
+            0% {
+                transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px);
+            }
 
-        .hero h1 {
-            font-size: clamp(3.5rem, 8vw, 7rem);
-            font-weight: 900;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #fff 0%, var(--primary) 50%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.3));
-        }
-
-        .hero p {
-            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
-            color: var(--text-muted);
-            margin-bottom: 3rem;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .cta-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.2rem 3.5rem;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .cta-button:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 0 40px rgba(112, 0, 255, 0.6);
-        }
-
-        /* Sections */
-        section {
-            padding: 8rem 2rem;
-            position: relative;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 5rem;
-        }
-
-        .section-title {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 800;
-            margin-bottom: 1rem;
-            display: inline-block;
-            background: linear-gradient(to right, #fff, var(--text-muted));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .section-subtitle {
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        /* Grids */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Cards */
-        .card {
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 242, 255, 0.1);
-            background: var(--bg-card);
-            border-radius: 20px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 242, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .card-preview {
-            height: 220px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-preview::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-
-        .card:hover .card-preview::after {
-            opacity: 1;
-        }
-
-        .card-content {
-            padding: 2rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.8rem;
-            color: #fff;
-        }
-
-        .card-desc {
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            font-size: 1rem;
-            flex-grow: 1;
-        }
-
-        .play-btn {
-            display: block;
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 700;
-            transition: all 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
-        }
-
-        .card:hover .play-btn {
-            background: var(--primary);
-            color: #000;
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-        }
-
-        /* Features */
-        .feature-card {
-            padding: 2.5rem;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s;
-        }
-
-        .feature-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-5px);
-        }
-
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            display: inline-block;
-            padding: 1rem;
-            background: rgba(0, 242, 255, 0.1);
-            border-radius: 16px;
-            color: var(--primary);
-        }
-
-        /* Footer */
-        footer {
-            background: #020203;
-            padding: 4rem 2rem;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .footer-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-links a:hover {
-            color: var(--primary);
-        }
-
-        /* Admin Link */
-        .admin-link {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            text-decoration: none;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            z-index: 100;
-        }
-
-        .admin-link:hover {
-            background: var(--primary);
-            color: #000;
-            transform: rotate(90deg);
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-right: 0.5rem;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-
-        .badge.new {
-            background: var(--accent);
-        }
-
-        .badge.update {
-            background: var(--secondary);
+            100% {
+                transform: perspective(500px) rotateX(60deg) translateY(50px) translateZ(-200px);
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Hero Section -->
-    <section class="hero">
-        <canvas id="starfield"></canvas>
-        <div class="hero-content">
-            <h1>WEBCOMIC<br>READER</h1>
-            <p>La próxima generación de entretenimiento digital. Historias inmersivas, audio dinámico y una zona arcade
-                retro-futurista.</p>
-            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <a href="#comics" class="cta-button">
-                    <i class="fa-solid fa-book-open"></i> LEER COMICS
-                </a>
-                <a href="#arcade" class="cta-button"
-                    style="background: transparent; border: 1px solid var(--primary); color: var(--primary);">
-                    <i class="fa-solid fa-gamepad"></i> ARCADE ZONE
-                </a>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+    <div class="bg-grid"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="brand-title glitch-wrapper" data-text="BARQUITO GAMES">BARQUITO GAMES</h1>
+            <div class="brand-subtitle">PSYCHOREACTIVE ENTERTAINMENT SYSTEMS</div>
+            <div style="margin-top: 1rem; font-size: 1.2rem;">EST. 198X</div>
+        </header>
+
+        <nav class="nav-menu">
+            <a href="#games" class="nav-item">GAMES_LIB</a>
+            <a href="#interactive" class="nav-item">INTERACTIVE_NARRATIVE</a>
+            <a href="#about" class="nav-item">SYS_INFO</a>
+        </nav>
+
+        <section id="games">
+            <div style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-microchip fa-2x"></i>
+                <h2 style="font-size: 2.5rem;">AVAILABLE ROMS</h2>
             </div>
-        </div>
-    </section>
 
-    <!-- Arcade Section -->
-    <section id="arcade">
-        <div class="section-header">
-            <span class="section-subtitle">PLAY & EARN</span>
-            <h2 class="section-title">ARCADE ZONE</h2>
-            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">
-                Juegos clásicos reinventados con estética neón y mecánicas modernas.
-            </p>
-        </div>
-
-        <div class="grid">
-            <!-- Alien Abductor -->
-            <div class="card">
-                <div class="card-preview" style="color: var(--primary);">🛸</div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge new">NEW</span>
-                        <span class="badge">ACTION</span>
+            <div class="rom-grid">
+                <!-- Alien Abductor -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>ROM_01</span>
+                        <span>[ACTIVE]</span>
                     </div>
-                    <h3 class="card-title">Alien Abductor</h3>
-                    <p class="card-desc">Abduce vacas, esquiva misiles y explora el cosmos en este arcade de física.</p>
-                    <a href="abduct.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-
-            <!-- Neon Gacha -->
-            <div class="card">
-                <div class="card-preview" style="color: var(--accent);">💎</div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge new">NEW</span>
-                        <span class="badge">SIMULATION</span>
+                    <div class="rom-preview">
+                        <i class="fas fa-user-astronaut" style="color: var(--neon-green);"></i>
                     </div>
-                    <h3 class="card-title">Neon Gacha 2077</h3>
-                    <p class="card-desc">Colecciona personajes, prueba tu suerte con el sistema de Pity y completa
-                        logros en este simulador adictivo.</p>
-                    <a href="gacha.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-
-            <!-- Neon Tetris -->
-            <div class="card">
-                <div class="card-preview" style="color: var(--primary);">🧩</div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge new">NEW</span>
-                        <span class="badge">PUZZLE</span>
-                    </div>
-                    <h3 class="card-title">Neon Tetris</h3>
-                    <p class="card-desc">El clásico de los bloques con un estilo neón explosivo, música dinámica y
-                        efectos de partículas.</p>
-                    <a href="tetris.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-
-            <!-- Space Shooter -->
-            <div class="card">
-                <div class="card-preview" style="color: #ffcc00;">🚀</div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge update">UPDATED</span>
-                        <span class="badge">ACTION</span>
-                    </div>
-                    <h3 class="card-title">Space Shooter</h3>
-                    <p class="card-desc">Combos, Bullet Time y Jefes Finales. Destruye hordas alienígenas en este
-                        shooter frenético.</p>
-                    <a href="game.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-
-            <!-- Gravity Lander -->
-            <div class="card">
-                <div class="card-preview" style="color: #bd00ff;">🌑</div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge">PHYSICS</span>
-                    </div>
-                    <h3 class="card-title">Gravity Lander</h3>
-                    <p class="card-desc">Domina la gravedad, el viento y el combustible limitado en este desafiante
-                        simulador de aterrizaje.</p>
-                    <a href="lander.html" class="play-btn">JUGAR AHORA</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Webcomics Section -->
-    <section id="comics">
-        <div class="section-header">
-            <span class="section-subtitle">ORIGINAL STORIES</span>
-            <h2 class="section-title">WEBCOMICS</h2>
-            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">
-                Historias diseñadas para la pantalla. Desliza, escucha y vive la aventura.
-            </p>
-        </div>
-
-        <div class="grid">
-            <!-- Comic 1 -->
-            <div class="card" onclick="window.location.href='reader.html'" style="cursor: pointer;">
-                <div class="card-preview"
-                    style="background: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&q=80') center/cover;">
-                    <div
-                        style="position: absolute; inset: 0; background: linear-gradient(to top, #000, transparent); display: flex; align-items: flex-end; padding: 2rem;">
-                        <!-- Overlay content if needed -->
+                    <div class="rom-info">
+                        <h3 class="rom-title">ALIEN ABDUCTOR</h3>
+                        <div class="rom-meta">GENRE: PHYSICS_ACTION</div>
+                        <p style="margin-bottom: 1rem;">Abduct specimens. Avoid missiles. Compliance is mandatory.</p>
+                        <a href="abduct.html" class="btn-load">LOAD CARTRIDGE</a>
                     </div>
                 </div>
-                <div class="card-content">
-                    <div style="margin-bottom: 1rem;">
-                        <span class="badge" style="background: var(--secondary);">AUDIO ENABLED</span>
+
+                <!-- Space Shooter -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>ROM_02</span>
+                        <span>[UPDATED]</span>
                     </div>
-                    <h3 class="card-title">Space Chronicles</h3>
-                    <p class="card-desc">Una aventura épica a través del cosmos. Sigue al Capitán Nova mientras
-                        descubre
-                        los secretos de la Nebulosa Perdida.</p>
-                    <span class="play-btn">LEER AHORA</span>
+                    <div class="rom-preview">
+                        <i class="fas fa-rocket" style="color: #ffcc00;"></i>
+                    </div>
+                    <div class="rom-info">
+                        <h3 class="rom-title">SPACE SHOOTER</h3>
+                        <div class="rom-meta">GENRE: BULLET_HELL</div>
+                        <p style="margin-bottom: 1rem;">Defend the sector. Bullet time module installed.</p>
+                        <a href="game.html" class="btn-load">LOAD CARTRIDGE</a>
+                    </div>
+                </div>
+
+                <!-- Gravity Lander -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>ROM_03</span>
+                        <span>[HARDCORE]</span>
+                    </div>
+                    <div class="rom-preview">
+                        <i class="fas fa-moon" style="color: var(--neon-purple);"></i>
+                    </div>
+                    <div class="rom-info">
+                        <h3 class="rom-title">GRAVITY LANDER</h3>
+                        <div class="rom-meta">GENRE: SIMULATION</div>
+                        <p style="margin-bottom: 1rem;">Vector physics engine. Fuel critical. Do not crash.</p>
+                        <a href="lander.html" class="btn-load">LOAD CARTRIDGE</a>
+                    </div>
+                </div>
+
+                <!-- Neon Gacha -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>ROM_04</span>
+                        <span>[ADDICTIVE]</span>
+                    </div>
+                    <div class="rom-preview">
+                        <i class="fas fa-gem" style="color: var(--neon-blue);"></i>
+                    </div>
+                    <div class="rom-info">
+                        <h3 class="rom-title">NEON GACHA 2077</h3>
+                        <div class="rom-meta">GENRE: RNG_SIM</div>
+                        <p style="margin-bottom: 1rem;">Collect entities. Test probability algorithms.</p>
+                        <a href="gacha.html" class="btn-load">LOAD CARTRIDGE</a>
+                    </div>
+                </div>
+
+                <!-- Neon Tetris -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>ROM_05</span>
+                        <span>[CLASSIC]</span>
+                    </div>
+                    <div class="rom-preview">
+                        <i class="fas fa-cubes" style="color: #ff0055;"></i>
+                    </div>
+                    <div class="rom-info">
+                        <h3 class="rom-title">NEON TETRIS</h3>
+                        <div class="rom-meta">GENRE: PUZZLE</div>
+                        <p style="margin-bottom: 1rem;">Stack blocks. Clear lines. High score database active.</p>
+                        <a href="tetris.html" class="btn-load">LOAD CARTRIDGE</a>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Placeholder -->
-            <div class="card" style="opacity: 0.6;">
-                <div class="card-preview" style="background: #111; color: #333;">📚</div>
-                <div class="card-content">
-                    <h3 class="card-title">Próximamente</h3>
-                    <p class="card-desc">Nuevas historias están en desarrollo. Mantente atento para más
-                        actualizaciones.
-                    </p>
+        <section id="interactive" style="margin-top: 6rem;">
+            <div style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-book-dead fa-2x"></i>
+                <h2 style="font-size: 2.5rem;">NARRATIVE MODULES</h2>
+            </div>
+
+            <div class="rom-grid">
+                <!-- Space Chronicles -->
+                <div class="rom-card">
+                    <div class="rom-header">
+                        <span>STORY_01</span>
+                        <span>[AUDIO_ON]</span>
+                    </div>
+                    <div class="rom-preview" style="background: linear-gradient(45deg, #000, #1a001a);">
+                        <i class="fas fa-eye" style="color: #fff;"></i>
+                    </div>
+                    <div class="rom-info">
+                        <h3 class="rom-title">SPACE CHRONICLES</h3>
+                        <div class="rom-meta">TYPE: INTERACTIVE_COMIC</div>
+                        <p style="margin-bottom: 1rem;">Visual novel experience. Audio synthesis enabled. Immersion
+                            mandatory.</p>
+                        <a href="reader.html" class="btn-load">INITIATE SEQUENCE</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Features -->
-    <section>
-        <div class="section-header">
-            <span class="section-subtitle">WHY US?</span>
-            <h2 class="section-title">CARACTERÍSTICAS</h2>
-        </div>
-        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-            <div class="feature-card">
-                <i class="fa-solid fa-eye feature-icon"></i>
-                <h3 style="color: white; margin-bottom: 0.5rem;">Panel Focus</h3>
-                <p style="color: var(--text-muted);">Lectura guiada viñeta por viñeta para máxima inmersión.</p>
+        <footer>
+            <div class="blink-text">INSERT COIN TO CONTINUE</div>
+            <div style="margin-top: 1rem; font-size: 1rem; color: #666;">
+                BARQUITO GAMES © 198X - 2025<br>
+                ALL RIGHTS RESERVED. UNAUTHORIZED DUPLICATION IS A VIOLATION OF APPLICABLE LAWS.
             </div>
-            <div class="feature-card">
-                <i class="fa-solid fa-music feature-icon"></i>
-                <h3 style="color: white; margin-bottom: 0.5rem;">Audio Dinámico</h3>
-                <p style="color: var(--text-muted);">Música y efectos que cambian según lo que lees.</p>
-            </div>
-            <div class="feature-card">
-                <i class="fa-solid fa-mobile-screen feature-icon"></i>
-                <h3 style="color: white; margin-bottom: 0.5rem;">100% Responsive</h3>
-                <p style="color: var(--text-muted);">Diseñado para funcionar perfecto en móvil, tablet y PC.</p>
-            </div>
-            <div class="feature-card">
-                <i class="fa-solid fa-bolt feature-icon"></i>
-                <h3 style="color: white; margin-bottom: 0.5rem;">Carga Instantánea</h3>
-                <p style="color: var(--text-muted);">Optimizado para velocidad y rendimiento fluido.</p>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <div class="footer-links">
-            <a href="#">Inicio</a>
-            <a href="#arcade">Juegos</a>
-            <a href="#comics">Comics</a>
-            <a href="#">Contacto</a>
-        </div>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">
-            © 2025 Webcomic Reader. Creado con <span style="color: var(--primary);">Antigravity AI</span>.
-        </p>
-    </footer>
-
-    <a href="admin.html" class="admin-link" title="Admin Panel">
-        <i class="fa-solid fa-gear"></i>
-    </a>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="hero.js"></script>
+        </footer>
+    </div>
 </body>
 
 </html>
