@@ -88,6 +88,22 @@
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
+        } else if (type === 'powerup') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.linearRampToValueAtTime(1200, now + 0.3);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'hurt') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
         }
     };
 
@@ -96,14 +112,16 @@
         score: 0,
         gameOver: false,
         shake: 0,
-        level: 1
+        level: 1,
+        combo: 0,
+        comboTimer: 0
     };
 
     // --- UI Injection ---
     const scoreEl = document.getElementById('score');
     const hud = document.querySelector('.hud');
     if (hud) {
-        hud.style.fontFamily = '"Segoe UI", sans-serif';
+        hud.style.fontFamily = '"Outfit", sans-serif';
         hud.style.textTransform = 'uppercase';
         hud.style.letterSpacing = '2px';
         hud.style.textShadow = '0 0 10px #00f2ff';
@@ -115,6 +133,10 @@
         controlsDiv.style.marginTop = '10px';
         controlsDiv.style.opacity = '0.8';
         controlsDiv.innerHTML = `
+            <div style="margin-bottom: 5px; color: var(--primary);">
+                <i class="fa-solid fa-heart" style="color: #ff0055;"></i> <span id="hpDisplay">3</span>
+                <span style="margin-left: 15px; color: #ffff00;">COMBO: x<span id="comboDisplay">0</span></span>
+            </div>
             <span style="margin-right: 15px;">WASD / ARROWS: Move</span>
             <span style="margin-right: 15px;">SPACE: Shoot</span>
             <span style="margin-right: 15px;">Q: Switch Weapon</span>
@@ -122,6 +144,8 @@
         `;
         hud.appendChild(controlsDiv);
     }
+    const hpEl = document.getElementById('hpDisplay');
+    const comboEl = document.getElementById('comboDisplay');
 
     // News/System Ticker
     const newsEl = document.getElementById('news') || document.createElement('div');
@@ -136,8 +160,10 @@
         });
     }
 
-    const showMessage = (text) => {
+    const showMessage = (text, color = '#00f2ff') => {
         newsEl.textContent = text;
+        newsEl.style.color = color;
+        newsEl.style.textShadow = `0 0 20px ${color}`;
         newsEl.style.opacity = '1';
         newsEl.style.transform = 'scale(1.2)';
         setTimeout(() => {
@@ -216,6 +242,12 @@
             this.cooldown = 0;
             this.weapon = 'blaster'; // blaster, shotgun
             this.dashCooldown = 0;
+
+            // New Stats
+            this.hp = 3;
+            this.maxHp = 3;
+            this.invuln = 0;
+            this.rapidFireTimer = 0;
         }
 
         update() {
@@ -247,6 +279,7 @@
                 this.dashCooldown = 60; // 1 second
                 playSound('dash');
                 state.shake += 5;
+                this.invuln = 15; // Brief invulnerability during dash
                 // Dash particles
                 for (let i = 0; i < 10; i++) {
                     particles.push(new Particle(this.pos.x, this.pos.y, vec.mult(dashForce, -0.5), '#ffffff', 1, 20));
@@ -261,6 +294,10 @@
             }
             if (!keys['KeyQ']) this.switchPressed = false;
 
+            // Timers
+            if (this.invuln > 0) this.invuln--;
+            if (this.rapidFireTimer > 0) this.rapidFireTimer--;
+
             this.vel = vec.mult(this.vel, this.friction);
             super.update();
 
@@ -274,21 +311,22 @@
         shoot() {
             const muzzle = vec.rot({ x: 0, y: -20 }, this.angle);
             const pos = vec.add(this.pos, muzzle);
+            const isRapid = this.rapidFireTimer > 0;
 
             if (this.weapon === 'blaster') {
                 const vel = vec.rot({ x: 0, y: -10 }, this.angle);
-                bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel)));
+                bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel), 'player'));
                 playSound('shoot');
-                this.cooldown = 10;
+                this.cooldown = isRapid ? 5 : 10;
                 state.shake += 2;
             } else if (this.weapon === 'shotgun') {
                 for (let i = -1; i <= 1; i++) {
                     const spread = i * 0.15;
                     const vel = vec.rot({ x: 0, y: -10 }, this.angle + spread);
-                    bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel), 1.5, '#ff00aa', 40));
+                    bullets.push(new Bullet(pos.x, pos.y, vec.add(this.vel, vel), 'player', 1.5, '#ff00aa', 40));
                 }
                 playSound('shotgun');
-                this.cooldown = 30;
+                this.cooldown = isRapid ? 15 : 30;
                 state.shake += 5;
                 // Recoil
                 const recoil = { x: Math.cos(this.angle + Math.PI / 2) * 2, y: Math.sin(this.angle + Math.PI / 2) * 2 };
@@ -296,7 +334,38 @@
             }
         }
 
+        hit() {
+            if (this.invuln > 0) return;
+
+            this.hp--;
+            this.invuln = 120; // 2 seconds invulnerability
+            state.shake += 15;
+            playSound('hurt');
+            showMessage("HULL DAMAGE!", "#ff0055");
+
+            // Update UI
+            if (hpEl) hpEl.innerText = this.hp;
+
+            if (this.hp <= 0) {
+                this.dead = true;
+                // Big explosion
+                for (let i = 0; i < 50; i++) particles.push(new Particle(this.pos.x, this.pos.y, null, '#00f2ff'));
+                showMessage("GAME OVER - R para Reiniciar", "#ff0000");
+            }
+        }
+
+        heal() {
+            if (this.hp < this.maxHp) {
+                this.hp++;
+                if (hpEl) hpEl.innerText = this.hp;
+                showMessage("SYSTEM REPAIRED", "#00ff00");
+            }
+        }
+
         drawShape(ctx) {
+            // Flicker if invulnerable
+            if (this.invuln > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
+
             ctx.beginPath();
             ctx.moveTo(0, -20);
             ctx.lineTo(12, 15);
@@ -309,13 +378,20 @@
                 ctx.fillStyle = '#ff00aa';
                 ctx.fill();
             }
+
+            // Draw Rapid Fire Glow
+            if (this.rapidFireTimer > 0) {
+                ctx.strokeStyle = '#ffff00';
+                ctx.stroke();
+            }
         }
     }
 
     class Bullet extends Entity {
-        constructor(x, y, vel, size = 2, color = '#ffea00', life = 60) {
+        constructor(x, y, vel, owner = 'player', size = 2, color = '#ffea00', life = 60) {
             super(x, y);
             this.vel = vel;
+            this.owner = owner;
             this.radius = size;
             this.color = color;
             this.life = life;
@@ -382,6 +458,12 @@
             playSound('explosion');
             state.shake += this.size * 3;
 
+            // Chance to drop powerup
+            if (Math.random() < 0.15) {
+                const type = Math.random() < 0.5 ? 'health' : 'rapid';
+                powerups.push(new Powerup(this.pos.x, this.pos.y, type));
+            }
+
             if (this.size > 1) {
                 for (let i = 0; i < 2; i++) {
                     asteroids.push(new Asteroid(this.pos.x, this.pos.y, this.size - 1));
@@ -403,12 +485,23 @@
                 this.pos.x = 0;
             }
             this.timer = 0;
+            this.shootTimer = 0;
         }
 
         update() {
             super.update();
             this.timer++;
             if (this.timer % 30 === 0) playSound('ufo');
+
+            // Shoot at player
+            this.shootTimer++;
+            if (this.shootTimer > 120 && !player.dead) { // Shoot every 2 seconds
+                this.shootTimer = 0;
+                const angleToPlayer = Math.atan2(player.pos.y - this.pos.y, player.pos.x - this.pos.x);
+                const vel = { x: Math.cos(angleToPlayer) * 4, y: Math.sin(angleToPlayer) * 4 };
+                bullets.push(new Bullet(this.pos.x, this.pos.y, vel, 'enemy', 3, '#ff0000'));
+                playSound('shoot');
+            }
 
             // Remove if off screen
             if (this.pos.x < -50 || this.pos.x > width + 50) this.dead = true;
@@ -427,12 +520,43 @@
             this.dead = true;
             playSound('ufo_die');
             state.shake += 10;
-            state.score += 500;
-            scoreEl.textContent = state.score;
+            addScore(500);
             showMessage("UFO DESTROYED +500");
             for (let i = 0; i < 30; i++) {
                 particles.push(new Particle(this.pos.x, this.pos.y, null, '#00ff00'));
             }
+            // Drop powerup
+            powerups.push(new Powerup(this.pos.x, this.pos.y, 'rapid'));
+        }
+    }
+
+    class Powerup extends Entity {
+        constructor(x, y, type) {
+            super(x, y);
+            this.type = type; // 'health', 'rapid'
+            this.radius = 12;
+            this.life = 600; // 10 seconds
+            this.color = type === 'health' ? '#ff0055' : '#ffff00';
+            this.icon = type === 'health' ? '❤️' : '⚡';
+        }
+
+        update() {
+            super.update();
+            this.life--;
+            if (this.life <= 0) this.dead = true;
+        }
+
+        drawShape(ctx) {
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.icon, 0, 1);
         }
     }
 
@@ -468,8 +592,19 @@
     let bullets = [];
     let asteroids = [];
     let particles = [];
+    let powerups = [];
     let ufo = null;
     let ufoTimer = 0;
+
+    // --- Helpers ---
+    const addScore = (points) => {
+        state.combo++;
+        state.comboTimer = 120; // 2 seconds to chain
+        const multiplier = Math.min(Math.floor(state.combo / 5) + 1, 5);
+        state.score += points * multiplier;
+        scoreEl.textContent = state.score;
+        if (comboEl) comboEl.innerText = multiplier;
+    };
 
     // --- Level Management ---
     const startLevel = () => {
@@ -507,6 +642,15 @@
             if (state.shake < 0.5) state.shake = 0;
         }
 
+        // Combo Timer
+        if (state.comboTimer > 0) {
+            state.comboTimer--;
+            if (state.comboTimer <= 0) {
+                state.combo = 0;
+                if (comboEl) comboEl.innerText = 1;
+            }
+        }
+
         // Update & Draw Player
         if (!player.dead) {
             player.update();
@@ -533,6 +677,24 @@
             b.draw(ctx);
         });
 
+        // Update & Draw Powerups
+        powerups = powerups.filter(p => !p.dead);
+        powerups.forEach(p => {
+            p.update();
+            p.draw(ctx);
+
+            // Collision with player
+            if (!player.dead && vec.mag(vec.sub(p.pos, player.pos)) < p.radius + player.radius) {
+                p.dead = true;
+                playSound('powerup');
+                if (p.type === 'health') player.heal();
+                if (p.type === 'rapid') {
+                    player.rapidFireTimer = 600; // 10 seconds
+                    showMessage("RAPID FIRE!", "#ffff00");
+                }
+            }
+        });
+
         // Update & Draw Asteroids
         asteroids = asteroids.filter(a => !a.dead);
         asteroids.forEach(a => {
@@ -541,41 +703,41 @@
 
             // Collision: Bullet vs Asteroid
             bullets.forEach(b => {
-                if (!b.dead && vec.mag(vec.sub(a.pos, b.pos)) < a.radius) {
+                if (!b.dead && b.owner === 'player' && vec.mag(vec.sub(a.pos, b.pos)) < a.radius) {
                     a.break();
                     b.dead = true;
-                    state.score += 100 * (4 - a.size);
-                    scoreEl.textContent = state.score;
+                    addScore(100 * (4 - a.size));
                 }
             });
 
             // Collision: Player vs Asteroid
             if (!player.dead && vec.mag(vec.sub(a.pos, player.pos)) < a.radius + player.radius) {
-                player.dead = true;
-                state.shake += 20;
-                playSound('explosion');
-                // Big explosion
-                for (let i = 0; i < 50; i++) particles.push(new Particle(player.pos.x, player.pos.y, null, '#00f2ff'));
-                showMessage("GAME OVER - R para Reiniciar");
+                player.hit();
+                a.break();
             }
         });
 
-        // Collision: Bullet vs UFO
-        if (ufo) {
-            bullets.forEach(b => {
-                if (!b.dead && vec.mag(vec.sub(ufo.pos, b.pos)) < ufo.radius + 5) {
-                    ufo.die();
-                    b.dead = true;
-                }
-            });
-            // Collision: Player vs UFO
-            if (!player.dead && vec.mag(vec.sub(ufo.pos, player.pos)) < ufo.radius + player.radius) {
-                player.dead = true;
-                state.shake += 20;
-                playSound('explosion');
-                for (let i = 0; i < 50; i++) particles.push(new Particle(player.pos.x, player.pos.y, null, '#00f2ff'));
-                showMessage("GAME OVER - R para Reiniciar");
+        // Collision: Bullet vs UFO / Player
+        bullets.forEach(b => {
+            if (b.dead) return;
+
+            // Player Bullet hitting UFO
+            if (b.owner === 'player' && ufo && vec.mag(vec.sub(ufo.pos, b.pos)) < ufo.radius + 5) {
+                ufo.die();
+                b.dead = true;
             }
+
+            // Enemy Bullet hitting Player
+            if (b.owner === 'enemy' && !player.dead && vec.mag(vec.sub(player.pos, b.pos)) < player.radius + 5) {
+                player.hit();
+                b.dead = true;
+            }
+        });
+
+        // Collision: Player vs UFO
+        if (ufo && !player.dead && vec.mag(vec.sub(ufo.pos, player.pos)) < ufo.radius + player.radius) {
+            player.hit();
+            ufo.die();
         }
 
         // Level Complete
@@ -601,9 +763,13 @@
             player = new Player();
             state.score = 0;
             state.level = 1;
+            state.combo = 0;
             scoreEl.textContent = 0;
+            if (hpEl) hpEl.innerText = 3;
+            if (comboEl) comboEl.innerText = 0;
             ufo = null;
             ufoTimer = 0;
+            powerups = [];
             startLevel();
         }
     };

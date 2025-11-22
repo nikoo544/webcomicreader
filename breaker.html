@@ -4,91 +4,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Breaker 2077</title>
+    <title>Cyber Breaker: Galaxy Tour</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
+        :root {
+            --bg-color: #050508;
+            --primary: #00f2ff;
+            --secondary: #bd00ff;
+            --accent: #ff0055;
+            --text: #ffffff;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background: #050508;
-            color: #fff;
-            font-family: 'Segoe UI', monospace;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
             overflow: hidden;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
 
         #game-container {
             position: relative;
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 900px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
         }
 
         canvas {
-            background: #0a0b10;
-            border: 2px solid #00f2ff;
-            border-radius: 4px;
             display: block;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1rem;
         }
 
         .hud {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            width: 100%;
             display: flex;
             justify-content: space-between;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            text-transform: uppercase;
-            color: #00f2ff;
-            text-shadow: 0 0 10px #00f2ff;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
         }
 
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3rem;
-            font-weight: bold;
-            text-align: center;
-            text-shadow: 0 0 20px #00f2ff;
-            display: none;
-            pointer-events: none;
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .controls-hint {
+        /* Shop / Intermission Screen */
+        #intermission-screen {
             position: absolute;
-            bottom: -30px;
+            top: 0;
             left: 0;
             width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .planet-info {
             text-align: center;
-            color: #666;
-            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .planet-title {
+            font-size: 3rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .shop-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .shop-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .shop-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .shop-price {
+            color: var(--accent);
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        .next-btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            color: white;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+
+        .next-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.6);
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .title-big {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 20px var(--secondary);
+            margin-bottom: 2rem;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
     </style>
 </head>
 
 <body>
+
+    <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Arcade</a>
+
     <div id="game-container">
-        <div class="hud">
-            <span>SCORE: <span id="score">0</span></span>
-            <span>LIVES: <span id="lives">3</span></span>
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="ui-layer">
+            <div class="hud">
+                <div class="hud-item"><i class="fa-solid fa-heart" style="color: var(--accent);"></i> <span
+                        id="livesDisplay">3</span></div>
+                <div class="hud-item"><i class="fa-solid fa-coins" style="color: gold;"></i> <span
+                        id="scoreDisplay">0</span></div>
+                <div class="hud-item"><i class="fa-solid fa-globe" style="color: var(--primary);"></i> <span
+                        id="levelDisplay">1-1</span></div>
+            </div>
         </div>
-        <canvas id="breakerCanvas" width="800" height="600"></canvas>
-        <div id="message">CLICK TO START</div>
-        <div class="controls-hint">MOUSE/ARROWS to Move | CLICK/SPACE to Launch</div>
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <div class="title-big">CYBER BREAKER</div>
+            <p style="margin-bottom: 2rem; color: #aaa;">Viaja por la galaxia, destruye defensas y mejora tu nave.</p>
+            <button class="next-btn" onclick="startGame()">INICIAR MISIÓN</button>
+        </div>
+
+        <!-- Shop / Intermission -->
+        <div id="intermission-screen">
+            <div class="planet-info">
+                <h2 style="color: #888; font-size: 1rem; letter-spacing: 2px;">MISSION COMPLETE</h2>
+                <div class="planet-title" id="nextPlanetName">NEON CITY</div>
+                <p id="planetDesc">Sector industrial controlado por IA.</p>
+            </div>
+
+            <div class="shop-grid">
+                <div class="shop-item" onclick="buyUpgrade('health')">
+                    <div class="shop-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <h3>Repair Hull</h3>
+                    <p>+1 Vida</p>
+                    <div class="shop-price">300 CR</div>
+                </div>
+                <div class="shop-item" onclick="buyUpgrade('width')">
+                    <div class="shop-icon"><i class="fa-solid fa-arrows-left-right"></i></div>
+                    <h3>Wide Paddle</h3>
+                    <p>+10% Ancho</p>
+                    <div class="shop-price">500 CR</div>
+                </div>
+                <div class="shop-item" onclick="buyUpgrade('magnet')">
+                    <div class="shop-icon"><i class="fa-solid fa-magnet"></i></div>
+                    <h3>Magnet Field</h3>
+                    <p>Power-up Duration</p>
+                    <div class="shop-price">400 CR</div>
+                </div>
+            </div>
+
+            <button class="next-btn" onclick="nextLevel()">WARP JUMP <i class="fa-solid fa-rocket"></i></button>
+        </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('breakerCanvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Audio Context
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        // Set canvas size
+        function resize() {
+            canvas.width = document.getElementById('game-container').clientWidth;
+            canvas.height = document.getElementById('game-container').clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
+        // Game State
+        let gameState = 'START'; // START, PLAYING, SHOP, GAMEOVER
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let planetIndex = 0;
+        let credits = 0; // Same as score for simplicity in this arcade version
+
+        // Config
+        const PADDLE_WIDTH_BASE = 100;
+        let paddleWidth = PADDLE_WIDTH_BASE;
+        const BALL_SPEED_BASE = 6;
+
+        // Objects
+        const paddle = {
+            x: canvas.width / 2 - 50,
+            y: canvas.height - 40,
+            width: 100,
+            height: 15,
+            color: '#00f2ff',
+            dx: 0,
+            speed: 8
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 6,
+            speed: BALL_SPEED_BASE,
+            dx: BALL_SPEED_BASE,
+            dy: -BALL_SPEED_BASE,
+            color: '#fff',
+            active: false
+        };
+
+        let bricks = [];
+        let powerups = [];
+        let particles = [];
+
+        // Planets Configuration
+        const PLANETS = [
+            { name: "NEON CITY", color: "#00f2ff", bg: "#050510", brickColors: ["#00f2ff", "#0088ff", "#0044ff"] },
+            { name: "MARS OUTPOST", color: "#ff5500", bg: "#1a0500", brickColors: ["#ff5500", "#ff8800", "#ffaa00"] },
+            { name: "CYBER JUNGLE", color: "#00ff88", bg: "#001a05", brickColors: ["#00ff88", "#00cc44", "#006622"] },
+            { name: "VOID STATION", color: "#bd00ff", bg: "#10001a", brickColors: ["#bd00ff", "#ff00ff", "#8800ff"] }
+        ];
+
+        // PowerUp Types
+        const POWERUP_TYPES = [
+            { type: 'wide', color: '#00ff00', icon: '↔️' },
+            { type: 'laser', color: '#ff0000', icon: '🔫' },
+            { type: 'multi', color: '#ffff00', icon: '🎱' },
+            { type: 'life', color: '#ff0055', icon: '❤️' }
+        ];
+
+        // Audio Context
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -97,6 +341,7 @@
             gain.connect(audioCtx.destination);
 
             const now = audioCtx.currentTime;
+
             if (type === 'hit') {
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(400, now);
@@ -105,332 +350,343 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                 osc.start(now);
                 osc.stop(now + 0.1);
-            } else if (type === 'brick') {
+            } else if (type === 'paddle') {
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+                osc.frequency.setValueAtTime(600, now);
                 gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                 osc.start(now);
                 osc.stop(now + 0.1);
             } else if (type === 'powerup') {
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(1000, now);
-                osc.frequency.linearRampToValueAtTime(2000, now + 0.2);
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
                 gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
                 osc.start(now);
                 osc.stop(now + 0.2);
             }
         }
 
-        // Game State
-        let state = 'menu'; // menu, playing, gameover, win
-        let score = 0;
-        let lives = 3;
-        let level = 1;
-
-        // Entities
-        const paddle = {
-            x: 350, y: 550, width: 100, height: 15,
-            color: '#00f2ff', speed: 8, dx: 0
-        };
-
-        let balls = [];
-        let bricks = [];
-        let powerups = [];
-        let particles = [];
-
-        // Input
-        let leftPressed = false;
+        // Input Handling
         let rightPressed = false;
-        let mouseX = 0;
+        let leftPressed = false;
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') leftPressed = true;
-            if (e.key === 'ArrowRight') rightPressed = true;
-            if (e.key === ' ' && state === 'menu') startGame();
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Right' || e.key === 'ArrowRight') rightPressed = true;
+            if (e.key === 'Left' || e.key === 'ArrowLeft') leftPressed = true;
+            if (e.code === 'Space' && gameState === 'PLAYING' && !ball.active) {
+                ball.active = true;
+                ball.dx = (Math.random() - 0.5) * 8;
+                ball.dy = -ball.speed;
+            }
         });
-        document.addEventListener('keyup', e => {
-            if (e.key === 'ArrowLeft') leftPressed = false;
-            if (e.key === 'ArrowRight') rightPressed = false;
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Right' || e.key === 'ArrowRight') rightPressed = false;
+            if (e.key === 'Left' || e.key === 'ArrowLeft') leftPressed = false;
         });
-        document.addEventListener('mousemove', e => {
+
+        // Touch controls
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touchX = e.touches[0].clientX;
             const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-        });
-        document.addEventListener('click', () => {
-            if (state === 'menu' || state === 'gameover' || state === 'win') startGame();
-            else if (state === 'playing' && balls.length === 0) launchBall();
+            const relativeX = touchX - rect.left;
+
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddle.x = relativeX - paddle.width / 2;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState === 'PLAYING' && !ball.active) {
+                ball.active = true;
+                ball.dx = (Math.random() - 0.5) * 8;
+                ball.dy = -ball.speed;
+            }
         });
 
-        function initLevel() {
+        // Logic
+        function createBricks() {
             bricks = [];
             const rows = 5 + level;
             const cols = 8;
             const padding = 10;
-            const brickWidth = (canvas.width - (padding * (cols + 1))) / cols;
-            const brickHeight = 25;
-            const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
+            const offsetTop = 80;
+            const offsetLeft = 35;
+            const brickWidth = (canvas.width - (offsetLeft * 2) - (padding * (cols - 1))) / cols;
+            const brickHeight = 20;
 
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    bricks.push({
-                        x: c * (brickWidth + padding) + padding,
-                        y: r * (brickHeight + padding) + 50,
-                        w: brickWidth, h: brickHeight,
-                        status: 1,
-                        color: colors[r % colors.length]
-                    });
-                }
-            }
-        }
+            const planet = PLANETS[planetIndex % PLANETS.length];
 
-        function startGame() {
-            score = 0;
-            lives = 3;
-            level = 1;
-            state = 'playing';
-            document.getElementById('message').style.display = 'none';
-            initLevel();
-            resetBall();
-            loop();
-        }
-
-        function resetBall() {
-            balls = [{
-                x: paddle.x + paddle.width / 2,
-                y: paddle.y - 10,
-                dx: 4 * (Math.random() > 0.5 ? 1 : -1),
-                dy: -4,
-                radius: 6,
-                active: true
-            }];
-        }
-
-        function launchBall() {
-            // Logic handled in resetBall mostly, but could be used for sticky paddle
-        }
-
-        function update() {
-            if (state !== 'playing') return;
-
-            // Paddle Movement
-            if (leftPressed) paddle.x -= paddle.speed;
-            if (rightPressed) paddle.x += paddle.speed;
-
-            // Mouse control override
-            if (mouseX > 0 && mouseX < canvas.width) {
-                paddle.x = mouseX - paddle.width / 2;
-            }
-
-            // Clamp paddle
-            if (paddle.x < 0) paddle.x = 0;
-            if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
-
-            // Balls
-            for (let i = balls.length - 1; i >= 0; i--) {
-                let b = balls[i];
-                b.x += b.dx;
-                b.y += b.dy;
-
-                // Walls
-                if (b.x + b.radius > canvas.width || b.x - b.radius < 0) {
-                    b.dx = -b.dx;
-                    playSound('hit');
-                }
-                if (b.y - b.radius < 0) {
-                    b.dy = -b.dy;
-                    playSound('hit');
-                }
-                else if (b.y + b.radius > canvas.height) {
-                    balls.splice(i, 1);
-                    if (balls.length === 0) {
-                        lives--;
-                        if (lives <= 0) {
-                            state = 'gameover';
-                            document.getElementById('message').textContent = "GAME OVER";
-                            document.getElementById('message').style.display = 'block';
-                            document.getElementById('message').style.color = '#ff0000';
-                        } else {
-                            resetBall();
-                        }
-                    }
-                    continue;
-                }
-
-                // Paddle Collision
-                if (b.y + b.radius > paddle.y && b.y - b.radius < paddle.y + paddle.height &&
-                    b.x > paddle.x && b.x < paddle.x + paddle.width) {
-                    b.dy = -Math.abs(b.dy); // Always bounce up
-                    // Add some english based on where it hit
-                    let hitPoint = b.x - (paddle.x + paddle.width / 2);
-                    b.dx = hitPoint * 0.15;
-                    playSound('hit');
-
-                    // Particles
-                    for (let j = 0; j < 5; j++) {
-                        particles.push({
-                            x: b.x, y: b.y,
-                            vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
-                            life: 20, color: '#00f2ff'
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    // Simple map generation logic
+                    if (Math.random() > 0.2) {
+                        bricks.push({
+                            x: (c * (brickWidth + padding)) + offsetLeft,
+                            y: (r * (brickHeight + padding)) + offsetTop,
+                            w: brickWidth,
+                            h: brickHeight,
+                            status: 1,
+                            color: planet.brickColors[r % 3]
                         });
                     }
                 }
+            }
+        }
 
-                // Bricks Collision
-                let hitBrick = false;
-                for (let j = 0; j < bricks.length; j++) {
-                    let br = bricks[j];
-                    if (br.status === 1) {
-                        if (b.x > br.x && b.x < br.x + br.w && b.y > br.y && b.y < br.y + br.h) {
-                            b.dy = -b.dy;
-                            br.status = 0;
-                            score += 10;
-                            playSound('brick');
-                            hitBrick = true;
+        function spawnPowerup(x, y) {
+            if (Math.random() < 0.15) { // 15% chance
+                const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+                powerups.push({
+                    x: x,
+                    y: y,
+                    type: type,
+                    dy: 3
+                });
+            }
+        }
 
-                            // Particles
-                            for (let k = 0; k < 8; k++) {
-                                particles.push({
-                                    x: br.x + br.w / 2, y: br.y + br.h / 2,
-                                    vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
-                                    life: 30, color: br.color
-                                });
-                            }
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    dx: (Math.random() - 0.5) * 5,
+                    dy: (Math.random() - 0.5) * 5,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
 
-                            // Powerup Chance (10%)
-                            if (Math.random() < 0.1) {
-                                powerups.push({
-                                    x: br.x + br.w / 2, y: br.y,
-                                    type: Math.random() > 0.5 ? 'wide' : 'multi',
-                                    dy: 2
-                                });
-                            }
-                            break;
-                        }
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Paddle Movement
+            if (rightPressed && paddle.x < canvas.width - paddle.width) {
+                paddle.x += paddle.speed;
+            }
+            else if (leftPressed && paddle.x > 0) {
+                paddle.x -= paddle.speed;
+            }
+
+            // Ball Movement
+            if (ball.active) {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Wall collisions
+                if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+                    ball.dx = -ball.dx;
+                }
+                if (ball.y - ball.radius < 0) {
+                    ball.dy = -ball.dy;
+                }
+                else if (ball.y + ball.radius > canvas.height) {
+                    // Ball lost
+                    lives--;
+                    ball.active = false;
+                    ball.x = paddle.x + paddle.width / 2;
+                    ball.y = paddle.y - 20;
+                    updateUI();
+                    if (lives <= 0) {
+                        // Game Over logic (for now just restart level 1)
+                        alert("GAME OVER - Score: " + score);
+                        document.location.reload();
                     }
                 }
+
+                // Paddle collision
+                if (ball.y + ball.radius > paddle.y &&
+                    ball.x > paddle.x &&
+                    ball.x < paddle.x + paddle.width) {
+                    ball.dy = -Math.abs(ball.dy); // Always bounce up
+                    // Add some english based on where it hit
+                    const hitPoint = ball.x - (paddle.x + paddle.width / 2);
+                    ball.dx = hitPoint * 0.15;
+                    playSound('paddle');
+                }
+
+                // Brick collision
+                let activeBricks = 0;
+                bricks.forEach(b => {
+                    if (b.status === 1) {
+                        activeBricks++;
+                        if (ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
+                            ball.dy = -ball.dy;
+                            b.status = 0;
+                            score += 10;
+                            credits += 10;
+                            playSound('hit');
+                            createParticles(b.x + b.w / 2, b.y + b.h / 2, b.color);
+                            spawnPowerup(b.x + b.w / 2, b.y + b.h / 2);
+                            updateUI();
+                        }
+                    }
+                });
+
+                if (activeBricks === 0) {
+                    openShop();
+                }
+            } else {
+                // Ball stuck to paddle
+                ball.x = paddle.x + paddle.width / 2;
+                ball.y = paddle.y - 10;
             }
 
             // Powerups
-            for (let i = powerups.length - 1; i >= 0; i--) {
-                let p = powerups[i];
+            powerups.forEach((p, index) => {
                 p.y += p.dy;
-
                 // Collision with paddle
                 if (p.y > paddle.y && p.y < paddle.y + paddle.height &&
                     p.x > paddle.x && p.x < paddle.x + paddle.width) {
                     activatePowerup(p.type);
-                    powerups.splice(i, 1);
-                    playSound('powerup');
-                } else if (p.y > canvas.height) {
-                    powerups.splice(i, 1);
+                    powerups.splice(index, 1);
                 }
-            }
+                // Out of bounds
+                if (p.y > canvas.height) powerups.splice(index, 1);
+            });
 
             // Particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-
-            // Check Win
-            if (bricks.every(b => b.status === 0)) {
-                level++;
-                initLevel();
-                resetBall();
-                // Speed up ball slightly
-                balls.forEach(b => { b.dx *= 1.1; b.dy *= 1.1; });
-            }
-
-            updateUI();
+            particles.forEach((p, index) => {
+                p.x += p.dx;
+                p.y += p.dy;
+                p.life -= 0.05;
+                if (p.life <= 0) particles.splice(index, 1);
+            });
         }
 
         function activatePowerup(type) {
-            if (type === 'wide') {
-                paddle.width = 150;
-                setTimeout(() => paddle.width = 100, 10000);
-            } else if (type === 'multi') {
-                if (balls.length > 0) {
-                    let b = balls[0];
-                    balls.push({ ...b, dx: -b.dx });
-                    balls.push({ ...b, dx: b.dx * 0.5 });
-                }
+            playSound('powerup');
+            if (type.type === 'wide') {
+                paddle.width = Math.min(paddle.width + 40, 200);
+                setTimeout(() => paddle.width = Math.max(paddle.width - 40, 60), 10000);
+            } else if (type.type === 'life') {
+                lives++;
+                updateUI();
+            } else if (type.type === 'multi') {
+                // Not implemented fully in this simple version, just bonus points
+                score += 100;
+                credits += 100;
+                updateUI();
             }
         }
 
-        function updateUI() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('lives').textContent = lives;
-        }
-
         function draw() {
-            // Clear with trail
-            ctx.fillStyle = 'rgba(10, 11, 16, 0.3)';
+            // Clear with trail effect
+            ctx.fillStyle = PLANETS[planetIndex % PLANETS.length].bg + "80"; // Hex with alpha
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Paddle
+            // Draw Paddle
             ctx.fillStyle = paddle.color;
             ctx.shadowBlur = 20;
             ctx.shadowColor = paddle.color;
             ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
             ctx.shadowBlur = 0;
 
-            // Balls
-            ctx.fillStyle = '#fff';
-            balls.forEach(b => {
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            // Draw Ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
 
-            // Bricks
+            // Draw Bricks
             bricks.forEach(b => {
                 if (b.status === 1) {
                     ctx.fillStyle = b.color;
-                    ctx.fillRect(b.x, b.y, b.w - 2, b.h - 2);
+                    ctx.fillRect(b.x, b.y, b.w, b.h);
+
+                    // OPTIMIZATION: Removed expensive shadowBlur per brick
+                    // Used simple stroke instead for depth
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
                 }
             });
 
-            // Powerups
+            // Draw Powerups
             powerups.forEach(p => {
-                ctx.fillStyle = p.type === 'wide' ? '#00ff00' : '#ff00ff';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.font = '10px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.type === 'wide' ? 'W' : 'M', p.x, p.y + 3);
+                ctx.font = "20px Arial";
+                ctx.fillText(p.type.icon, p.x - 10, p.y);
             });
 
-            // Particles
+            // Draw Particles
             particles.forEach(p => {
+                ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life / 30;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
+                ctx.fillRect(p.x, p.y, 4, 4);
+                ctx.globalAlpha = 1.0;
             });
+
+            requestAnimationFrame(draw);
         }
 
-        function loop() {
-            requestAnimationFrame(loop);
+        function gameLoop() {
             update();
             draw();
+            if (gameState === 'PLAYING') requestAnimationFrame(gameLoop);
         }
 
-        // Initial draw
-        ctx.fillStyle = '#050508';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#00f2ff';
-        ctx.font = '20px Segoe UI';
-        ctx.textAlign = 'center';
-        ctx.fillText('CLICK TO START', canvas.width / 2, canvas.height / 2);
+        // UI Functions
+        function updateUI() {
+            document.getElementById('scoreDisplay').innerText = credits;
+            document.getElementById('livesDisplay').innerText = lives;
+            document.getElementById('levelDisplay').innerText = (planetIndex + 1) + "-" + level;
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameState = 'PLAYING';
+            createBricks();
+            gameLoop();
+        }
+
+        function openShop() {
+            gameState = 'SHOP';
+            const planet = PLANETS[(planetIndex + 1) % PLANETS.length];
+            document.getElementById('nextPlanetName').innerText = planet.name;
+            document.getElementById('nextPlanetName').style.background = `linear-gradient(45deg, ${planet.color}, #fff)`;
+            document.getElementById('nextPlanetName').style.webkitBackgroundClip = 'text';
+            document.getElementById('nextPlanetName').style.webkitTextFillColor = 'transparent';
+
+            document.getElementById('intermission-screen').style.display = 'flex';
+        }
+
+        function nextLevel() {
+            document.getElementById('intermission-screen').style.display = 'none';
+            planetIndex++;
+            level++;
+            ball.active = false;
+            ball.x = paddle.x + paddle.width / 2;
+            ball.y = paddle.y - 20;
+            createBricks();
+            gameState = 'PLAYING';
+            updateUI();
+        }
+
+        function buyUpgrade(type) {
+            if (type === 'health' && credits >= 300) {
+                credits -= 300;
+                lives++;
+                playSound('powerup');
+            } else if (type === 'width' && credits >= 500) {
+                credits -= 500;
+                paddle.width += 20;
+                playSound('powerup');
+            } else if (type === 'magnet' && credits >= 400) {
+                credits -= 400;
+                // Just a visual placeholder for now
+                playSound('powerup');
+            }
+            updateUI();
+        }
+
+        // Start loop for drawing background
+        draw();
 
     </script>
 </body>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POLYBIUS - SENSORY TEST</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: none;
+            /* Hide cursor for immersion */
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hud-text {
+            font-size: 24px;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        #subliminal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            font-weight: bold;
+            opacity: 0;
+            color: #f00;
+            text-shadow: 0 0 20px #f00;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            pointer-events: auto;
+            cursor: default;
+        }
+
+        h1 {
+            font-size: 80px;
+            margin: 0;
+            animation: glitch 0.2s infinite;
+            text-shadow: 2px 2px #f00, -2px -2px #00f;
+        }
+
+        p {
+            font-size: 20px;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.5;
+            margin-top: 20px;
+        }
+
+        button {
+            margin-top: 40px;
+            background: transparent;
+            border: 2px solid #0f0;
+            color: #0f0;
+            font-family: inherit;
+            font-size: 24px;
+            padding: 15px 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 20px #0f0;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            20% {
+                transform: translate(-2px, 2px);
+            }
+
+            40% {
+                transform: translate(2px, -2px);
+            }
+
+            60% {
+                transform: translate(-2px, -2px);
+            }
+
+            80% {
+                transform: translate(2px, 2px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanline"></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-text">SUBJECT: <span id="score">000000</span></div>
+        <div class="hud-text" style="text-align: right;">STABILITY: <span id="health">100%</span></div>
+    </div>
+
+    <div id="subliminal">OBEY</div>
+
+    <div id="start-screen">
+        <h1>POLYBIUS</h1>
+        <p>WARNING: This program produces psychoactive visual patterns. Side effects may include: amnesia, insomnia,
+            night terrors, and geometric hallucinations.</p>
+        <p style="color: #f00; font-weight: bold;">DO NOT PLAY IF YOU ARE PRONE TO SEIZURES.</p>
+        <button onclick="startGame()">INITIATE TEST</button>
+        <a href="index.html" style="margin-top: 20px; color: #555; text-decoration: none;">[ ABORT ]</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let centerX, centerY;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Audio Context
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, type = 'sine', dur = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + dur);
+        }
+
+        // Game State
+        let gameState = 'MENU';
+        let frame = 0;
+        let score = 0;
+        let health = 100;
+        let rotation = 0;
+        let colorShift = 0;
+
+        // Player
+        const player = {
+            angle: 0,
+            radius: 20,
+            distance: 200 // Distance from center
+        };
+
+        // Entities
+        let enemies = [];
+        let bullets = [];
+        let particles = [];
+
+        // Input
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameState = 'PLAYING';
+            score = 0;
+            health = 100;
+            enemies = [];
+            bullets = [];
+            loop();
+
+            // Background drone
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 50;
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.05;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+        }
+
+        function spawnEnemy() {
+            enemies.push({
+                angle: Math.random() * Math.PI * 2,
+                distance: 0,
+                speed: 2 + (score / 1000),
+                type: Math.random() > 0.8 ? 'SPIKE' : 'SQUARE',
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`
+            });
+        }
+
+        function update() {
+            frame++;
+            colorShift++;
+            rotation = Math.sin(frame * 0.01) * 0.1;
+
+            // Player Movement
+            if (keys['ArrowLeft'] || keys['KeyA']) player.angle -= 0.1;
+            if (keys['ArrowRight'] || keys['KeyD']) player.angle += 0.1;
+
+            // Shooting
+            if ((keys['Space'] || keys['ArrowUp']) && frame % 5 === 0) {
+                bullets.push({
+                    angle: player.angle,
+                    distance: player.distance - 10,
+                    speed: -10
+                });
+                playTone(800 + Math.random() * 200, 'square', 0.05);
+            }
+
+            // Enemies
+            if (frame % 30 === 0) spawnEnemy();
+
+            enemies.forEach((e, i) => {
+                e.distance += e.speed;
+
+                // Collision with player
+                if (e.distance > player.distance - 20) {
+                    if (Math.abs(e.angle - player.angle) < 0.2 || Math.abs(e.angle - player.angle - Math.PI * 2) < 0.2) {
+                        health -= 10;
+                        enemies.splice(i, 1);
+                        playTone(100, 'sawtooth', 0.5);
+                        screenShake();
+                    }
+                }
+
+                // Out of bounds
+                if (e.distance > width) enemies.splice(i, 1);
+            });
+
+            // Bullets
+            bullets.forEach((b, i) => {
+                b.distance += b.speed;
+                if (b.distance < 0) bullets.splice(i, 1);
+
+                // Collision
+                enemies.forEach((e, j) => {
+                    if (Math.abs(b.distance - e.distance) < 20 &&
+                        (Math.abs(b.angle - e.angle) < 0.2 || Math.abs(b.angle - e.angle - Math.PI * 2) < 0.2)) {
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        score += 100;
+                        createExplosion(e.angle, e.distance, e.color);
+                        playTone(1200, 'sine', 0.1);
+                    }
+                });
+            });
+
+            // Particles
+            particles.forEach((p, i) => {
+                p.life--;
+                p.distance += p.vel;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+
+            // Subliminal Messages
+            if (frame % 300 === 0) {
+                const words = ["OBEY", "CONSUME", "SLEEP", "SUBMIT", "NO THOUGHT", "WATCH"];
+                const el = document.getElementById('subliminal');
+                el.innerText = words[Math.floor(Math.random() * words.length)];
+                el.style.opacity = 0.5;
+                setTimeout(() => el.style.opacity = 0, 50);
+            }
+
+            // UI
+            document.getElementById('score').innerText = score.toString().padStart(6, '0');
+            document.getElementById('health').innerText = health + '%';
+
+            if (health <= 0) {
+                alert("SUBJECT FAILED. TERMINATING SESSION.");
+                location.reload();
+            }
+        }
+
+        function createExplosion(angle, dist, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    angle: angle + (Math.random() - 0.5) * 0.2,
+                    distance: dist,
+                    vel: (Math.random() - 0.5) * 5,
+                    life: 20,
+                    color: color
+                });
+            }
+        }
+
+        let shake = 0;
+        function screenShake() { shake = 10; }
+
+        function draw() {
+            // Clear with trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (shake > 0) {
+                ctx.save();
+                ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+                shake *= 0.9;
+            }
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotation);
+
+            // Draw Tunnel Grid
+            ctx.strokeStyle = `hsl(${colorShift}, 100%, 20%)`;
+            ctx.lineWidth = 2;
+
+            // Radial lines
+            for (let i = 0; i < 8; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                const a = (i / 8) * Math.PI * 2;
+                ctx.lineTo(Math.cos(a) * width, Math.sin(a) * width);
+                ctx.stroke();
+            }
+
+            // Concentric circles
+            for (let i = 0; i < 10; i++) {
+                const r = (frame * 2 + i * 100) % (width / 2);
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw Player
+            const px = Math.cos(player.angle) * player.distance;
+            const py = Math.sin(player.angle) * player.distance;
+            ctx.strokeStyle = '#0f0';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(px + Math.cos(player.angle) * 10, py + Math.sin(player.angle) * 10);
+            ctx.lineTo(px + Math.cos(player.angle + 2.5) * 15, py + Math.sin(player.angle + 2.5) * 15);
+            ctx.lineTo(px + Math.cos(player.angle - 2.5) * 15, py + Math.sin(player.angle - 2.5) * 15);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw Enemies
+            enemies.forEach(e => {
+                const ex = Math.cos(e.angle) * e.distance;
+                const ey = Math.sin(e.angle) * e.distance;
+                ctx.strokeStyle = e.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                if (e.type === 'SQUARE') {
+                    ctx.rect(ex - 10, ey - 10, 20, 20);
+                } else {
+                    ctx.moveTo(ex, ey - 10);
+                    ctx.lineTo(ex + 10, ey + 10);
+                    ctx.lineTo(ex - 10, ey + 10);
+                    ctx.closePath();
+                }
+                ctx.stroke();
+            });
+
+            // Draw Bullets
+            ctx.fillStyle = '#fff';
+            bullets.forEach(b => {
+                const bx = Math.cos(b.angle) * b.distance;
+                const by = Math.sin(b.angle) * b.distance;
+                ctx.beginPath();
+                ctx.arc(bx, by, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Particles
+            particles.forEach(p => {
+                const px = Math.cos(p.angle) * p.distance;
+                const py = Math.sin(p.angle) * p.distance;
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 20;
+                ctx.fillRect(px, py, 4, 4);
+                ctx.globalAlpha = 1;
+            });
+
+            ctx.restore();
+            if (shake > 0) ctx.restore();
+
+            requestAnimationFrame(loop);
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+            }
+        }
+    </script>
+</body>
+
+</html>
